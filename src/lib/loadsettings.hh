@@ -122,11 +122,6 @@ struct DLL_PUBLIC LoadPage {
 	//! Additional javascript to run on a page once it has loaded
 	QList< QString > runScript;
 
-	QString checkboxSvg;
-	QString checkboxCheckedSvg;
-	QString radiobuttonSvg;
-	QString radiobuttonCheckedSvg;
-
 	QString cacheDir;
 	static QList<QString> mediaFilesExtensions;
 

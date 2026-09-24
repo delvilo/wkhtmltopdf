@@ -44,7 +44,7 @@ void ConverterPrivate::updateWebSettings(QWebSettings * ws, const settings::Web 
 		ws->setPrintingMinimumShrinkFactor(1.0);
 	}
 #endif
-	ws->setAttribute(QWebSettings::JavaEnabled, s.enablePlugins);
+	ws->setAttribute(QWebSettings::JavaEnabled, false);
 	ws->setAttribute(QWebSettings::JavascriptEnabled, s.enableJavascript);
 	ws->setAttribute(QWebSettings::JavascriptCanOpenWindows, false);
 	ws->setAttribute(QWebSettings::JavascriptCanAccessClipboard, false);
@@ -52,7 +52,7 @@ void ConverterPrivate::updateWebSettings(QWebSettings * ws, const settings::Web 
 	//Newer versions of QT have even more settings to change
 	ws->setAttribute(QWebSettings::PrintElementBackgrounds, s.background);
 	ws->setAttribute(QWebSettings::AutoLoadImages, s.loadImages);
-	ws->setAttribute(QWebSettings::PluginsEnabled, s.enablePlugins);
+	ws->setAttribute(QWebSettings::PluginsEnabled, false);
 	if (!s.userStyleSheet.isEmpty())
 		ws->setUserStyleSheetUrl(MultiPageLoader::guessUrlFromString(s.userStyleSheet));
 }
@@ -161,13 +161,6 @@ bool Converter::convert() {
 */
 void Converter::cancel() {
 	priv().cancel();
-}
-
-void Converter::emitCheckboxSvgs(const settings::LoadPage & ls) {
-	emit checkboxSvgChanged(ls.checkboxSvg);
-	emit checkboxCheckedSvgChanged(ls.checkboxCheckedSvg);
-	emit radiobuttonSvgChanged(ls.radiobuttonSvg);
-	emit radiobuttonCheckedSvgChanged(ls.radiobuttonCheckedSvg);
 }
 
 }

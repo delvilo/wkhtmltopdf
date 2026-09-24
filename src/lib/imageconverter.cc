@@ -47,7 +47,6 @@ ImageConverterPrivate::ImageConverterPrivate(ImageConverter & o, wkhtmltopdf::se
 	settings(s),
 	loader(s.loadGlobal, 96, true),
 	out(o) {
-	out.emitCheckboxSvgs(s.loadPage);
 	if (data) inputData = *data;
 
 	phaseDescriptions.push_back("Loading page");
@@ -96,14 +95,6 @@ void ImageConverterPrivate::pagesLoaded(bool ok) {
 		}
 	}
 
-	// check whether image format is supported (for writing)
-//	QImageWriter test;
-//	test.setFormat(settings.fmt);
-//	if (!test.canWrite()) {
-//		if (!settings.quiet)printf("error: file format not supported\n");
-//		httpErrorCode=DEFAULT;
-//		return false;
-//	}
 	// create webkit frame and load website
 
 	currentPhase=1;
@@ -205,17 +196,6 @@ void ImageConverterPrivate::pagesLoaded(bool ok) {
 	painter.translate(-rect.left(), -rect.top());
 	frame->render(&painter);
 	painter.end();
-
-	//loadProgress(30);
-	// perform filter(s)
-	//if (settings.crop.width > 0 && settings.crop.height > 0)
-	//	image=image.copy(settings.crop.left,settings.crop.top,settings.crop.width,settings.crop.height);
-	//loadProgress(50);
-	//if (settings.scale.width > 0 && settings.scale.height > 0) {
-		// todo: perhaps get more user options to change aspect ration and scaling mode?
-	//	image=image.scaled(settings.scale.width,settings.scale.height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
-	//}
-	//loadProgress(80);
 
 	if (settings.fmt != "svg") {
 		QByteArray fmt=settings.fmt.toLatin1();

@@ -142,7 +142,6 @@ private:
 	QHash<int, QHash<QString, QWebElement> > pageAnchors;
 	QHash<int, QVector< QPair<QWebElement,QString> > > pageLocalLinks;
 	QHash<int, QVector< QPair<QWebElement,QString> > > pageExternalLinks;
-	QHash<int, QVector<QWebElement> > pageFormElements;
 	bool pageHasHeaderFooter;
 
     // loader for measuringHeader and measuringFooter
@@ -163,7 +162,7 @@ private:
 	void fillParms(QHash<QString, QString> & parms, int page, const PageObject & object);
 	QString hfreplace(const QString & q, const QHash<QString, QString> & parms);
 	QWebPage * loadHeaderFooter(QString url, const QHash<QString, QString> & parms, const settings::PdfObject & ps);
-    qreal calculateHeaderHeight(PageObject & object, QWebPage & header);
+    qreal calculateHeaderHeight(QWebPage & header);
 
 #endif
 	QWebPage * currentHeader;

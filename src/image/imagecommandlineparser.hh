@@ -38,19 +38,11 @@ public:
 	void outputManName(Outputter * o) const;
 	void outputSynopsis(Outputter * o) const;
 	void outputDescripton(Outputter * o) const;
-	void outputArgsFromStdin(Outputter * o) const;
-	void outputNotPatched(Outputter * o, bool sure) const;
-	void outputPageBreakDoc(Outputter * o) const;
 	void outputContact(Outputter * o) const;
-	void outputDocStart(Outputter * o) const;
-	void outputCompilation(Outputter * o) const;
-	void outputInstallation(Outputter * o) const;
-	void outputExamples(Outputter * o) const;
 
 	//commandlineparser.cc
 	virtual void usage(FILE * fd, bool extended) const;
 	virtual void manpage(FILE * fd) const;
-	virtual void readme(FILE * fd, bool html) const;
 	virtual QString appName() const {return "wkhtmltoimage";}
 
 	//void loadDefaults();

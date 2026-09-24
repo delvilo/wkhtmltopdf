@@ -29,7 +29,6 @@ public:
 	const static int global = 1;
 	const static int page = 2;
 	const static int toc = 4;
-	bool readArgsFromStdin;
 	wkhtmltopdf::settings::PdfGlobal & globalSettings;
 	QList<wkhtmltopdf::settings::PdfObject> & pageSettings;
 
@@ -44,24 +43,19 @@ public:
 	void outputSynopsis(Outputter * o) const;
 	void outputDescripton(Outputter * o) const;
 	void outputPageSizes(Outputter * o) const;
-	void outputArgsFromStdin(Outputter * o) const;
 	void outputHeaderFooterDoc(Outputter * o) const;
 	void outputTableOfContentDoc(Outputter * o) const;
 	void outputOutlineDoc(Outputter * o) const;
-	void outputNotPatched(Outputter * o, bool sure) const;
+	void outputNotPatched(Outputter * o) const;
 	void outputPageBreakDoc(Outputter * o) const;
 	void outputContact(Outputter * o) const;
-	void outputDocStart(Outputter * o) const;
-	void outputInstallation(Outputter * o) const;
-	void outputExamples(Outputter * o) const;
 
 	//commandlineparser.cc
 	virtual QString appName() const {return "wkhtmltopdf";}
 	virtual void usage(FILE * fd, bool extended) const;
 	virtual void manpage(FILE * fd) const;
-	virtual void readme(FILE * fd, bool html) const;
 
-	void parseArguments(int argc, const char ** argv, bool fromStdin=false);
+	void parseArguments(int argc, const char ** argv);
 
 	virtual char * mapAddress(char * d, char * ns) const {
 		const char * _od = reinterpret_cast<const char *>(&od);

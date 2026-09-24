@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 	bool use_graphics=true;
 #if defined(Q_OS_UNIX) || defined(Q_OS_MAC)
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	use_graphics=settings.useGraphics;
+	use_graphics=false;
 	if (!use_graphics) QApplication::setGraphicsSystem("raster");
 #endif
 #endif
@@ -58,10 +58,6 @@ int main(int argc, char** argv) {
 
 	//Create the actual page converter to convert the pages
 	wkhtmltopdf::ImageConverter converter(settings);
-	QObject::connect(&converter, SIGNAL(checkboxSvgChanged(const QString &)), style, SLOT(setCheckboxSvg(const QString &)));
-	QObject::connect(&converter, SIGNAL(checkboxCheckedSvgChanged(const QString &)), style, SLOT(setCheckboxCheckedSvg(const QString &)));
-	QObject::connect(&converter, SIGNAL(radiobuttonSvgChanged(const QString &)), style, SLOT(setRadioButtonSvg(const QString &)));
-	QObject::connect(&converter, SIGNAL(radiobuttonCheckedSvgChanged(const QString &)), style, SLOT(setRadioButtonCheckedSvg(const QString &)));
 
 	wkhtmltopdf::ProgressFeedback feedback(settings.logLevel, converter);
 	bool success = converter.convert();

@@ -57,14 +57,6 @@ struct DLL_LOCAL ReflectImpl<QPrinter::Orientation>: public ReflectSimple {
 };
 
 template<>
-struct DLL_LOCAL ReflectImpl<QPrinter::PrinterMode>: public ReflectSimple {
-	QPrinter::PrinterMode & m;
-	ReflectImpl(QPrinter::PrinterMode & _): m(_) {}
-	QString get() {return printerModeToStr(m);}
-	void set(const QString & value, bool * ok) {m = strToPrinterMode(value.toUtf8().constData(), ok);}
-};
-
-template<>
 struct DLL_LOCAL ReflectImpl<QPrinter::ColorMode>: public ReflectSimple {
 	QPrinter::ColorMode & m;
 	ReflectImpl(QPrinter::ColorMode & _): m(_) {}
@@ -107,23 +99,16 @@ template<>
 struct DLL_LOCAL ReflectImpl<PdfGlobal>: public ReflectClass {
 	ReflectImpl(PdfGlobal & c) {
 		WKHTMLTOPDF_REFLECT(size);
-		ReflectClass::add("quiet", new QuietArgBackwardsCompatReflect(c.logLevel));	// Fake the "quiet" argument
 		WKHTMLTOPDF_REFLECT(logLevel);
-		WKHTMLTOPDF_REFLECT(useGraphics);
 		WKHTMLTOPDF_REFLECT(resolveRelativeLinks);
 		WKHTMLTOPDF_REFLECT(orientation);
 		WKHTMLTOPDF_REFLECT(colorMode);
-		WKHTMLTOPDF_REFLECT(resolution);
 		WKHTMLTOPDF_REFLECT(dpi);
 		WKHTMLTOPDF_REFLECT(pageOffset);
-		WKHTMLTOPDF_REFLECT(copies);
-		WKHTMLTOPDF_REFLECT(collate);
 		WKHTMLTOPDF_REFLECT(outline);
 		WKHTMLTOPDF_REFLECT(outlineDepth);
-		WKHTMLTOPDF_REFLECT(dumpOutline);
 		WKHTMLTOPDF_REFLECT(out);
 		WKHTMLTOPDF_REFLECT(documentTitle);
-		WKHTMLTOPDF_REFLECT(useCompression);
 		WKHTMLTOPDF_REFLECT(margin);
 		WKHTMLTOPDF_REFLECT(imageDPI);
 		WKHTMLTOPDF_REFLECT(imageQuality);
@@ -156,7 +141,6 @@ struct DLL_LOCAL ReflectImpl<PdfObject>: public ReflectClass {
 		WKHTMLTOPDF_REFLECT(useExternalLinks);
 		WKHTMLTOPDF_REFLECT(useLocalLinks);
 		WKHTMLTOPDF_REFLECT(replacements);
-		WKHTMLTOPDF_REFLECT(produceForms);
 		WKHTMLTOPDF_REFLECT(load);
 		WKHTMLTOPDF_REFLECT(web);
 		WKHTMLTOPDF_REFLECT(includeInOutline);
@@ -314,24 +298,6 @@ QString unitRealToStr(const UnitReal & ur, bool * ok) {
 	return QString("%1%2").arg(ur.first).arg(c);
 }
 
-QPrinter::PrinterMode strToPrinterMode(const char * s, bool * ok) {
-	if (ok) *ok=true;
-	if (!strcasecmp(s,"screen")) return QPrinter::ScreenResolution;
-	if (!strcasecmp(s,"printer")) return QPrinter::PrinterResolution;
-	if (!strcasecmp(s,"high")) return QPrinter::HighResolution;
-	*ok=false;
-	return QPrinter::HighResolution;
-}
-
-QString printerModeToStr(QPrinter::PrinterMode o) {
-	switch (o) {
-	case QPrinter::ScreenResolution: return "screen";
-	case QPrinter::PrinterResolution: return "printer";
-	case QPrinter::HighResolution: return "high";
-	}
-	return QString();
-}
-
 QPrinter::ColorMode strToColorMode(const char * s, bool * ok) {
 	if (ok) *ok=true;
 	if (!strcasecmp(s,"color"))	return QPrinter::Color;
@@ -371,21 +337,15 @@ Margin::Margin():
 
 PdfGlobal::PdfGlobal():
 	logLevel(Info),
-	useGraphics(false),
 	resolveRelativeLinks(true),
 	orientation(QPrinter::Portrait),
 	colorMode(QPrinter::Color),
-	resolution(QPrinter::HighResolution),
 	dpi(96),
 	pageOffset(0),
-	copies(1),
-	collate(true),
 	outline(true),
 	outlineDepth(4),
-	dumpOutline(""),
 	out(""),
 	documentTitle(""),
-	useCompression(true),
 	viewportSize(""),
 	imageDPI(600),
 	imageQuality(94){};
@@ -401,7 +361,6 @@ TableOfContent::TableOfContent():
 PdfObject::PdfObject():
 	useExternalLinks(true),
 	useLocalLinks(true),
-	produceForms(false),
 	includeInOutline(true),
 	pagesCount(true),
 	isTableOfContent(false),

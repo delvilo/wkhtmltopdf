@@ -45,8 +45,7 @@ public:
 	virtual void cswitch(const ArgHandler * h) = 0;
 	virtual void endSwitch() = 0;
 	void paragraph(const QString & t);
-	static Outputter * text(FILE * fd, bool doc=false, bool extended=false);
+	static Outputter * text(FILE * fd);
 	static Outputter * man(FILE * fd);
-	static Outputter * html(FILE * fd);
 };
 #endif //__OUTPUTTER_HH__

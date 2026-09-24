@@ -21,31 +21,19 @@
 #include "outputter.hh"
 #include <qstringlist.h>
 
-#define S(t) (doc?(t).toUtf8().constData():(t).toLocal8Bit().constData())
+#define S(t) ((t).toLocal8Bit().constData())
 
 class TextOutputter: public Outputter {
 public:
 	FILE * fd;
 	static const int lw = 80;
 	int w;
-	bool doc;
-	bool extended;
 	bool first;
 	int order;
-	TextOutputter(FILE * _, bool d, bool e): fd(_), doc(d), extended(e) {}
+	TextOutputter(FILE * _): fd(_) {}
 
 	void beginSection(const QString & name) {
-		if (doc) {
-			int x= 80 - name.size() - 4;
-			if (x < 6) x = 60;
-			for (int i=0; i < x/2; ++i)
-				fprintf(fd, "=");
-			fprintf(fd, "> %s <", S(name) );
-			for (int i=0; i < (x+1)/2; ++i)
-				fprintf(fd, "=");
-			fprintf(fd, "\n");
-		} else
-			fprintf(fd, "%s:\n", S(name) );
+		fprintf(fd, "%s:\n", S(name) );
 	}
 
 	void endSection() {
@@ -53,12 +41,8 @@ public:
 
 	void beginParagraph() {
 		first=true;
-		if (doc) {
-			w=0;
-		} else {
-			w=2;
-			fprintf(fd,"  ");
-		}
+		w=2;
+		fprintf(fd,"  ");
 	}
 
 	void text(const QString & t) {
@@ -67,12 +51,8 @@ public:
 		foreach (const QString & s, list) {
 			if ( w + s.size() + (first?0:1) > lw) {
 				fprintf(fd, "\n");
-				if (doc) {
-					w=0;
-				} else {
-					w=2;
-					fprintf(fd,"  ");
-				}
+				w=2;
+				fprintf(fd,"  ");
 				first=true;
 			}
 			if (first) first=false;
@@ -106,12 +86,8 @@ public:
 	}
 
 	void verbatim(const QString & t) {
-		if (doc)
-			fprintf(fd,"%s\n", S(t));
-		else {
-			foreach (const QString & s, t.split("\n"))
-				fprintf(fd,"  %s\n",S(s));
-		}
+		foreach (const QString & s, t.split("\n"))
+			fprintf(fd,"  %s\n",S(s));
 	}
 
 	void beginList(bool ordered) {
@@ -129,18 +105,14 @@ public:
 	void beginSwitch() {}
 
 	void cswitch(const ArgHandler * h) {
-		w=0;
-		if (!doc) {fprintf(fd,"  "); w=2;}
+		w=2;
+		fprintf(fd,"  ");
 		if (h->shortSwitch != 0)
 			fprintf(fd,"-%c, ",h->shortSwitch);
 		else
 			fprintf(fd,"    ");
 		fprintf(fd,"--%s",S(h->longName));
 		w+=4 + 2 + h->longName.size();
-		if (doc && h->qthack) {
-			fprintf(fd, " *");
-			w += 2;
-		}
 
 		foreach (const QString & arg, h->argn) {
 			fprintf(fd," <%s>",S(arg));
@@ -166,19 +138,15 @@ public:
 	}
 
 	void endSwitch() {
-		if (doc)
-			fprintf(fd, "\nItems marked * are only available using patched QT.\n");
 		printf("\n");
 	}
 
 };
 
 /*!
-  Create a raw text outputter, used for outputting --help and readme
+  Create a raw text outputter, used for outputting --help and --license
   \param fd A file description to output to
-  \param doc Output in readme format
-  \param extended Output extended options
 */
-Outputter * Outputter::text(FILE * fd, bool doc, bool extended) {
-	return new TextOutputter(fd, doc, extended);
+Outputter * Outputter::text(FILE * fd) {
+	return new TextOutputter(fd);
 }

@@ -69,11 +69,10 @@ public:
 	void outputName(Outputter * o) const;
 	void outputLicense(Outputter * o) const;
 	void outputAuthors(Outputter * o) const;
-	void outputStaticProblems(Outputter * o) const;
 	void outputProxyDoc(Outputter * o) const;
 
 	//commandlineparserbase.cc
-	void outputSwitches(Outputter * o, bool extended, bool doc) const;
+	void outputSwitches(Outputter * o, bool extended) const;
 	virtual char * mapAddress(char * d, char *) const {return d;}
 	virtual void license(FILE * fd) const;
 	virtual void version(FILE * fd) const;
@@ -83,6 +82,5 @@ public:
 	const char *appVersion() const;
 	virtual void usage(FILE * fd, bool extended) const = 0;
 	virtual void manpage(FILE * fd) const = 0;
-	virtual void readme(FILE * fd, bool html) const = 0;
 };
 #endif //__COMMANDLINEPARSERBASE_HH__

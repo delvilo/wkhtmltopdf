@@ -20,9 +20,7 @@
 
 #include "arghandler.inl"
 #include "pdfcommandlineparser.hh"
-#include <QFile>
 #include <qglobal.h>
-#include <pdfconverter.hh>
 
 /*!
   \class ArgHandler
@@ -120,52 +118,11 @@ struct OrientationTM: public SomeSetterTM<QPrinter::Orientation> {
  */
 typedef SomeSetter<OrientationTM> OrientationSetter;
 
-struct DefaultTocFunc {
-	bool operator()(const char **, CommandLineParserBase &, char *) {
-		QFile file;
-		file.open(stdout, QIODevice::WriteOnly | QIODevice::Text);
-		QTextStream stream(&file);
-		wkhtmltopdf::settings::TableOfContent toc;
-		wkhtmltopdf::dumpDefaultTOCStyleSheet(stream, toc);
-		exit(0);
-	}
-};
-
-
-/*!
-  Set the default header
-*/
-struct DefaultHeaderFunc {
-	bool operator()(const char **, CommandLineParserBase & p, char * page) {
-		reinterpret_cast<PdfObject*>(page)->header.left="[webpage]";
-		reinterpret_cast<PdfObject*>(page)->header.right="[page]/[topage]";
-		reinterpret_cast<PdfObject*>(page)->header.line=true;
-		static_cast<PdfCommandLineParser&>(p).globalSettings.margin.top = strToUnitReal("2cm");
-		return true;
-	}
-};
-
-/*!
-  Setup default book mode
-*/
-struct BookFunc {
-	bool operator()(const char **, CommandLineParserBase &) {
-		//p.settings.header.left="[section]";
-		//p.settings.header.right="[page]/[toPage]";
-		//p.settings.header.line=true;
-		//p.settings.outline = true;
-		//p.settings.printToc = true;
-		//p.settings.margin.top = Settings::strToUnitReal("2cm");
-		return true;
-	}
-};
-
 /*!
   Construct the commandline parser adding all the arguments
   \param s The settings to store values in
 */
 PdfCommandLineParser::PdfCommandLineParser(PdfGlobal & s, QList<PdfObject> & ps):
-	readArgsFromStdin(false),
 	globalSettings(s),
 	pageSettings(ps) {
 	section("Global Options");
@@ -176,22 +133,14 @@ PdfCommandLineParser::PdfCommandLineParser(PdfGlobal & s, QList<PdfObject> & ps)
 	extended(false);
 	qthack(false);
 
-	addarg("quiet", 'q', "Be less verbose, maintained for backwards compatibility; Same as using --log-level none", new ConstSetter<LogLevel>(s.logLevel, None));
 	addarg("log-level", 0, "Set log level to: none, error, warn, info or debug", new LogLevelSetter(s.logLevel, "level"));
 
-	addarg("no-collate", 0, "Do not collate when printing multiple copies", new ConstSetter<bool>(s.collate, false));
-	addarg("collate", 0, "Collate when printing multiple copies", new ConstSetter<bool>(s.collate, true));
-
-	addarg("copies", 0, "Number of copies to print into the pdf file", new IntSetter(s.copies, "number"));
 	addarg("orientation",'O',"Set orientation to Landscape or Portrait", new OrientationSetter(s.orientation, "orientation"));
 	addarg("page-size",'s',"Set paper size to: A4, Letter, etc.", new PageSizeSetter(s.size.pageSize, "Size"));
 
 	addarg("grayscale",'g',"PDF will be generated in grayscale", new ConstSetter<QPrinter::ColorMode>(s.colorMode,QPrinter::GrayScale));
 
-	addarg("lowquality",'l',"Generates lower quality pdf/ps. Useful to shrink the result document space", new ConstSetter<QPrinter::PrinterMode>(s.resolution,QPrinter::ScreenResolution));
  	addarg("title", 0, "The title of the generated pdf file (The title of the first document is used if not specified)", new QStrSetter(s.documentTitle,"text"));
-
-	addarg("read-args-from-stdin", 0, "Read command line arguments from stdin", new ConstSetter<bool>(readArgsFromStdin, true) );
 
 	extended(true);
  	qthack(false);
@@ -211,11 +160,6 @@ PdfCommandLineParser::PdfCommandLineParser(PdfGlobal & s, QList<PdfObject> & ps)
 
 	addarg("image-quality", 0, "When jpeg compressing images use this quality", new IntSetter(s.imageQuality,"integer"));
 	addarg("image-dpi", 0, "When embedding images scale them down to this dpi", new IntSetter(s.imageDPI, "integer"));
-	addarg("no-pdf-compression", 0 , "Do not use lossless compression on pdf objects", new ConstSetter<bool>(s.useCompression,false));
-
-#ifdef Q_OS_UNIX
- 	addarg("use-xserver",0,"Use the X server (some plugins and other stuff might not work without X11)", new ConstSetter<bool>(s.useGraphics,true));
-#endif
 
  	section("Outline Options");
  	extended(true);
@@ -223,12 +167,9 @@ PdfCommandLineParser::PdfCommandLineParser(PdfGlobal & s, QList<PdfObject> & ps)
 	addarg("outline",0,"Put an outline into the pdf", new ConstSetter<bool>(s.outline,true));
  	addarg("no-outline",0,"Do not put an outline into the pdf", new ConstSetter<bool>(s.outline,false));
  	addarg("outline-depth",0,"Set the depth of the outline", new IntSetter(s.outlineDepth,"level"));
- 	addarg("dump-outline",0,"Dump the outline to a file",new QStrSetter(s.dumpOutline,"file"));
-	addarg("dump-default-toc-xsl",0,"Dump the default TOC xsl style sheet to stdout", new Caller<DefaultTocFunc>());
 
 	section("Page Options");
 	mode(page);
- 	addarg("default-header",0,"Add a default header, with the name of the page to the left, and the page number to the right, this is short for: --header-left '[webpage]' --header-right '[page]/[toPage]' --margin-top 2cm --header-line", new Caller<DefaultHeaderFunc>());
 
 	addarg("viewport-size", 0, "Set viewport size if you have custom scrollbars or css attribute overflow to emulate window size",new QStrSetter(s.viewportSize,""));
 	addWebArgs(od.web);
@@ -252,8 +193,6 @@ PdfCommandLineParser::PdfCommandLineParser(PdfGlobal & s, QList<PdfObject> & ps)
 
  	extended(true);
  	qthack(true);
-	addarg("enable-forms", 0, "Turn HTML form fields into pdf form fields", new ConstSetter<bool>(od.produceForms, true));
-	addarg("disable-forms", 0, "Do not turn HTML form fields into pdf form fields", new ConstSetter<bool>(od.produceForms, false));
  	addarg("disable-internal-links",0,"Do not make local links", new ConstSetter<bool>(od.useLocalLinks, false));
  	addarg("enable-internal-links",0,"Make local links", new ConstSetter<bool>(od.useLocalLinks, true));
  	addarg("disable-external-links",0,"Do not make links to remote web pages", new ConstSetter<bool>(od.useExternalLinks, false));

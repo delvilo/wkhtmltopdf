@@ -42,16 +42,13 @@ bool ahsort(const ArgHandler * a, const ArgHandler * b) {
   Output description of switches to an outputter
   \param o The outputter to output to
   \param extended Should we also output extended arguments
-  \param doc Indicate to the outputter that it is writing documentation
 */
-void CommandLineParserBase::outputSwitches(Outputter * o, bool extended, bool doc) const {
+void CommandLineParserBase::outputSwitches(Outputter * o, bool extended) const {
 	foreach (const QString & section, sections) {
 		QList<const ArgHandler *> display;
 		foreach (const ArgHandler * handler, sectionArgumentHandles[section]) {
 #ifndef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-			if (!doc && handler->qthack) continue;
-#else
-			Q_UNUSED(doc);
+			if (handler->qthack) continue;
 #endif
 			if (!extended && handler->extended) continue;
 			display.push_back(handler);
@@ -96,7 +93,7 @@ void CommandLineParserBase::version(FILE * fd) const {
   \param fd The file to output to
 */
 void CommandLineParserBase::license(FILE * fd) const {
- 	Outputter * o = Outputter::text(fd,false);
+	Outputter * o = Outputter::text(fd);
   	outputName(o);
   	outputAuthors(o);
   	outputLicense(o);
