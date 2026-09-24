@@ -24,14 +24,6 @@
 #if QT_VERSION < 0x050100
 #include <cerrno>
 #include <cstring>
-#ifdef Q_OS_WIN32
-#include <windows.h>
-#endif
-#endif
-
-#ifdef Q_OS_WIN32
-#include <fcntl.h>
-#include <io.h>
 #endif
 
 namespace wkhtmltopdf {
@@ -47,12 +39,6 @@ bool ImageOutput::open() {
 		return false;
 	}
 	if (path == "-") {
-#ifdef Q_OS_WIN32
-		if (_setmode(_fileno(stdout), _O_BINARY) == -1) {
-			error = "Could not switch stdout to binary mode";
-			return false;
-		}
-#endif
 		destination = &standardOutput;
 		if (standardOutput.open(stdout, QIODevice::WriteOnly)) return true;
 		error = standardOutput.errorString();
@@ -125,20 +111,11 @@ bool ImageOutput::commit() {
 		error = file.errorString();
 		return false;
 	}
-#ifdef Q_OS_WIN32
-	if (!MoveFileExW(reinterpret_cast<LPCWSTR>(file.fileName().utf16()),
-					 reinterpret_cast<LPCWSTR>(targetPath.utf16()),
-					 MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-		error = QString("Could not replace output file (system error %1)").arg(GetLastError());
-		return false;
-	}
-#else
 	if (::rename(QFile::encodeName(file.fileName()).constData(),
 				 QFile::encodeName(targetPath).constData()) != 0) {
 		error = QString::fromLocal8Bit(std::strerror(errno));
 		return false;
 	}
-#endif
 	file.setAutoRemove(false);
 	return true;
 #endif

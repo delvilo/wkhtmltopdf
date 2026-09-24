@@ -295,18 +295,14 @@ CAPI(int) wkhtmltopdf_init(int use_graphics) {
 		char * arg[] = {x, 0};
 		int aa = 1;
 
-#if QT_VERSION >= 0x050000 && defined(Q_OS_UNIX) && !defined(__EXTENSIVE_WKHTMLTOPDF_QT_HACK__)
+#if QT_VERSION >= 0x050000 && !defined(__EXTENSIVE_WKHTMLTOPDF_QT_HACK__)
 		setenv("QT_QPA_PLATFORM", "offscreen", 0);
 #endif
 
 		bool ug = true;
-#if defined(Q_OS_UNIX) || defined(Q_OS_MAC)
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
 		ug = use_graphics;
 		if (!ug) QApplication::setGraphicsSystem("raster");
-#else
-		Q_UNUSED(use_graphics);
-#endif
 #else
 		Q_UNUSED(use_graphics);
 #endif

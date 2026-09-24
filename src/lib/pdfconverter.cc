@@ -34,10 +34,6 @@
 #include <algorithm>
 #include <qapplication.h>
 #include <qfileinfo.h>
-#ifdef Q_OS_WIN32
-#include <fcntl.h>
-#include <io.h>
-#endif
 
 #include "dllbegin.inc"
 using namespace wkhtmltopdf;
@@ -342,12 +338,10 @@ void PdfConverterPrivate::pagesLoaded(bool ok) {
 
 	lout = settings.out;
 	if (settings.out == "-") {
-#ifndef Q_OS_WIN32
-		 if (QFile::exists("/dev/stdout"))
-			 lout = "/dev/stdout";
-		 else
-#endif
-			 lout = tempOut.create(".pdf");
+		if (QFile::exists("/dev/stdout"))
+			lout = "/dev/stdout";
+		else
+			lout = tempOut.create(".pdf");
 	}
 	if (settings.out.isEmpty())
 	  lout = tempOut.create(".pdf");
@@ -977,9 +971,6 @@ void PdfConverterPrivate::printDocument() {
 	if (settings.out == "-" && lout != "/dev/stdout") {
 		QFile i(lout);
 		QFile o;
-#ifdef Q_OS_WIN32
-		_setmode(_fileno(stdout), _O_BINARY);
-#endif
 		if ( !i.open(QIODevice::ReadOnly) ||
 			!o.open(stdout,QIODevice::WriteOnly) ||
 			!MultiPageLoader::copyFile(i,o) ) {

@@ -21,26 +21,22 @@
 #include "cliapplication.hh"
 #include <utilities.hh>
 
-#if defined(Q_OS_UNIX)
 #include <locale.h>
 #include <stdlib.h>
-#endif
 
 namespace wkhtmltopdf {
 
 void CliApplication::prepareEnvironment() {
-#if defined(Q_OS_UNIX)
 	setlocale(LC_ALL, "");
 #if QT_VERSION >= 0x050000 && !defined(__EXTENSIVE_WKHTMLTOPDF_QT_HACK__)
 	// Respect an explicit platform selected by the caller.
 	setenv("QT_QPA_PLATFORM", "offscreen", 0);
 #endif
-#endif
 }
 
 #if QT_VERSION < 0x050000
 bool CliApplication::useGraphics() {
-#if (defined(Q_OS_UNIX) || defined(Q_OS_MAC)) && defined(__EXTENSIVE_WKHTMLTOPDF_QT_HACK__)
+#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
 	QApplication::setGraphicsSystem("raster");
 	return false;
 #else
