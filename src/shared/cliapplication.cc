@@ -18,42 +18,46 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with wkhtmltopdf.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef __IMAGECONVERTER_P_HH__
-#define __IMAGECONVERTER_P_HH__
+#include "cliapplication.hh"
+#include <utilities.hh>
 
-#include "converter_p.hh"
-#include "imageconverter.hh"
-#include "multipageloader.hh"
+#if defined(Q_OS_UNIX)
+#include <locale.h>
+#include <stdlib.h>
+#endif
 
-#include "dllbegin.inc"
 namespace wkhtmltopdf {
 
-class DLL_LOCAL ImageConverterPrivate: public ConverterPrivate {
-	Q_OBJECT
-public:
-	ImageConverterPrivate(ImageConverter & o, wkhtmltopdf::settings::ImageGlobal & s, const QString * data);
+void CliApplication::prepareEnvironment() {
+#if defined(Q_OS_UNIX)
+	setlocale(LC_ALL, "");
+#if QT_VERSION >= 0x050000 && !defined(__EXTENSIVE_WKHTMLTOPDF_QT_HACK__)
+	// Respect an explicit platform selected by the caller.
+	setenv("QT_QPA_PLATFORM", "offscreen", 0);
+#endif
+#endif
+}
 
-	wkhtmltopdf::settings::ImageGlobal settings;
-	MultiPageLoader loader;
-private:
-	QByteArray outputData;
-	QString inputData;
+#if QT_VERSION < 0x050000
+bool CliApplication::useGraphics() {
+#if (defined(Q_OS_UNIX) || defined(Q_OS_MAC)) && defined(__EXTENSIVE_WKHTMLTOPDF_QT_HACK__)
+	QApplication::setGraphicsSystem("raster");
+	return false;
+#else
+	return true;
+#endif
+}
+#endif
 
-	ImageConverter & out;
-	void clearResources();
-	bool renderImage(QString & errorMessage);
-
-	LoaderObject * loaderObject;
-
-public slots:
-	void pagesLoaded(bool ok);
-	void beginConvert();
-
-	friend class ImageConverter;
-
-	virtual Converter & outer();
-};
+CliApplication::CliApplication(int & argc, char ** argv):
+#if QT_VERSION < 0x050000
+	QApplication(argc, argv, useGraphics())
+#else
+	QApplication(argc, argv)
+#endif
+{
+	// QApplication takes ownership of the style.
+	setStyle(new MyLooksStyle());
+}
 
 }
-#include "dllend.inc"
-#endif //__IMAGECONVERTER_P_HH__

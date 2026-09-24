@@ -46,7 +46,7 @@ public:
 	virtual QString appName() const {return "wkhtmltoimage";}
 
 	//void loadDefaults();
-	void parseArguments(int argc, const char ** argv, bool final=false);
+	void parseArguments(int argc, const char * const * argv);
 
 };
 #endif //__IMAGECOMMANDLINEPARSER_HH__

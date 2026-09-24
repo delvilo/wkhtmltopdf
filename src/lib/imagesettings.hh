@@ -81,6 +81,11 @@ struct DLL_PUBLIC ImageGlobal {
 
 	bool smartWidth;
 
+	//! Resolve the explicit format or output suffix; streams default to JPEG.
+	QString outputFormat() const;
+	//! Validate output settings after Qt initialization, before loading input.
+	bool validate(QString & error) const;
+
 	QString get(const char * name);
 	bool set(const char * name, const QString & value);
 };

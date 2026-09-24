@@ -1,0 +1,152 @@
+// -*- mode: c++; tab-width: 4; indent-tabs-mode: t; eval: (progn (c-set-style "stroustrup") (c-set-offset 'innamespace 0)); -*-
+// vi:set ts=4 sts=4 sw=4 noet :
+//
+// Copyright 2010-2020 wkhtmltopdf authors
+//
+// This file is part of wkhtmltopdf.
+//
+// wkhtmltopdf is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// wkhtmltopdf is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with wkhtmltopdf.  If not, see <http://www.gnu.org/licenses/>.
+
+#include "imageoutput.hh"
+#include <QFileInfo>
+#include <cstdio>
+#if QT_VERSION < 0x050100
+#include <cerrno>
+#include <cstring>
+#ifdef Q_OS_WIN32
+#include <windows.h>
+#endif
+#endif
+
+#ifdef Q_OS_WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
+
+namespace wkhtmltopdf {
+
+ImageOutput::ImageOutput(const QString & outputPath, QByteArray & data):
+	path(outputPath), buffer(&data), destination(0) {}
+
+bool ImageOutput::open() {
+	if (path.isEmpty()) {
+		destination = &buffer;
+		if (buffer.open(QIODevice::WriteOnly | QIODevice::Truncate)) return true;
+		error = buffer.errorString();
+		return false;
+	}
+	if (path == "-") {
+#ifdef Q_OS_WIN32
+		if (_setmode(_fileno(stdout), _O_BINARY) == -1) {
+			error = "Could not switch stdout to binary mode";
+			return false;
+		}
+#endif
+		destination = &standardOutput;
+		if (standardOutput.open(stdout, QIODevice::WriteOnly)) return true;
+		error = standardOutput.errorString();
+		return false;
+	}
+
+	const QFileInfo target(path);
+	if (target.exists() && !target.isFile()) {
+		error = "Image output must be a regular file or stdout";
+		return false;
+	}
+#if QT_VERSION >= 0x050100
+	file.setFileName(path);
+	// Never fall back to truncating the destination when a temporary file fails.
+	file.setDirectWriteFallback(false);
+	if (!file.open(QIODevice::WriteOnly)) {
+		error = file.errorString();
+		return false;
+	}
+#else
+	// Qt 4 has no QSaveFile. Resolve existing links before replacing the target.
+	targetPath = target.isSymLink() ? target.canonicalFilePath() : target.absoluteFilePath();
+	if (targetPath.isEmpty()) {
+		error = "Could not resolve the output symbolic link";
+		return false;
+	}
+	if (target.exists() && !target.isWritable()) {
+		error = "The output file is not writable";
+		return false;
+	}
+	const QFileInfo resolved(targetPath);
+	file.setFileTemplate(resolved.absolutePath() + "/." + resolved.fileName() + ".XXXXXX");
+	if (!file.open()) {
+		error = file.errorString();
+		return false;
+	}
+	if (target.exists() && !file.setPermissions(target.permissions())) {
+		error = file.errorString();
+		return false;
+	}
+#endif
+	destination = &file;
+	return true;
+}
+
+QIODevice * ImageOutput::device() {
+	return destination;
+}
+
+bool ImageOutput::commit() {
+	if (destination == &buffer) {
+		buffer.close();
+		return true;
+	}
+	if (destination == &standardOutput) {
+		if (standardOutput.flush() && standardOutput.error() == QFile::NoError) return true;
+		error = standardOutput.errorString();
+		return false;
+	}
+#if QT_VERSION >= 0x050100
+	if (file.commit()) return true;
+	error = file.errorString();
+#else
+	if (!file.flush() || file.error() != QFile::NoError) {
+		error = file.errorString();
+		return false;
+	}
+	file.close();
+	if (file.error() != QFile::NoError) {
+		error = file.errorString();
+		return false;
+	}
+#ifdef Q_OS_WIN32
+	if (!MoveFileExW(reinterpret_cast<LPCWSTR>(file.fileName().utf16()),
+					 reinterpret_cast<LPCWSTR>(targetPath.utf16()),
+					 MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+		error = QString("Could not replace output file (system error %1)").arg(GetLastError());
+		return false;
+	}
+#else
+	if (::rename(QFile::encodeName(file.fileName()).constData(),
+				 QFile::encodeName(targetPath).constData()) != 0) {
+		error = QString::fromLocal8Bit(std::strerror(errno));
+		return false;
+	}
+#endif
+	file.setAutoRemove(false);
+	return true;
+#endif
+	return false;
+}
+
+QString ImageOutput::errorString() const {
+	return error;
+}
+
+}

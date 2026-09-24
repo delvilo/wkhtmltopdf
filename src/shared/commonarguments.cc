@@ -61,7 +61,7 @@ typedef SomeSetter<ProxyTM> ProxySetter;
 */
 template <bool v>
 struct HelpFunc {
-	bool operator()(const char **, CommandLineParserBase & p, char *) {
+	bool operator()(const char * const *, CommandLineParserBase & p, char *) {
 		p.usage(stdout,v);
 		exit(0);
 	}
@@ -71,7 +71,7 @@ struct HelpFunc {
   Lambda: Call the man method
 */
 struct ManPageFunc {
-	bool operator()(const char **, CommandLineParserBase & p, char *) {
+	bool operator()(const char * const *, CommandLineParserBase & p, char *) {
 		p.manpage(stdout);
 		exit(0);
 	}
@@ -81,7 +81,7 @@ struct ManPageFunc {
   Lambda: Call the version method
 */
 struct VersionFunc {
-	bool operator()(const char **, CommandLineParserBase & p, char *) {
+	bool operator()(const char * const *, CommandLineParserBase & p, char *) {
 		p.version(stdout);
 		exit(0);
 	}
@@ -91,7 +91,7 @@ struct VersionFunc {
   Lambda: show the license
 */
 struct LicenseFunc {
-    bool operator()(const char **, CommandLineParserBase & p, char *) {
+    bool operator()(const char * const *, CommandLineParserBase & p, char *) {
 		p.license(stdout);
 		exit(0);
 	}

@@ -20,41 +20,21 @@
 
 #include "imagecommandlineparser.hh"
 #include "progressfeedback.hh"
-#include <QApplication>
-#include <QWebFrame>
+#include "cliapplication.hh"
 #include <imageconverter.hh>
 #include <imagesettings.hh>
 #include <utilities.hh>
 
-#if defined(Q_OS_UNIX)
-#include <locale.h>
-#endif
-
 int main(int argc, char** argv) {
-#if defined(Q_OS_UNIX)
-	setlocale(LC_ALL, "");
-#if QT_VERSION >= 0x050000 && !defined(__EXTENSIVE_WKHTMLTOPDF_QT_HACK__)
-	setenv("QT_QPA_PLATFORM", "offscreen", 0);
-#endif
-#endif
+	wkhtmltopdf::CliApplication::prepareEnvironment();
 	//This will store all our settings
 	wkhtmltopdf::settings::ImageGlobal settings;
 	//Create a command line parser to parse commandline arguments
 	ImageCommandLineParser parser(settings);
 	//Parse the arguments
-	parser.parseArguments(argc, (const char**)argv);
+	parser.parseArguments(argc, argv);
 
-
-	bool use_graphics=true;
-#if defined(Q_OS_UNIX) || defined(Q_OS_MAC)
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	use_graphics=false;
-	if (!use_graphics) QApplication::setGraphicsSystem("raster");
-#endif
-#endif
-	QApplication a(argc, argv, use_graphics);
-	MyLooksStyle * style = new MyLooksStyle();
-	a.setStyle(style);
+	wkhtmltopdf::CliApplication app(argc, argv);
 
 	//Create the actual page converter to convert the pages
 	wkhtmltopdf::ImageConverter converter(settings);

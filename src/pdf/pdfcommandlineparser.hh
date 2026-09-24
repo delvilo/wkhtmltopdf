@@ -55,7 +55,7 @@ public:
 	virtual void usage(FILE * fd, bool extended) const;
 	virtual void manpage(FILE * fd) const;
 
-	void parseArguments(int argc, const char ** argv);
+	void parseArguments(int argc, const char * const * argv);
 
 	virtual char * mapAddress(char * d, char * ns) const {
 		const char * _od = reinterpret_cast<const char *>(&od);

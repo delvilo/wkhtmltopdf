@@ -63,7 +63,7 @@
 */
 
 /*!
-  \fn ArgHandler::operator()(const char ** args, CommandLineParserPrivate & parser)
+  \fn ArgHandler::operator()(const char * const * args, CommandLineParserPrivate & parser)
   Callend when the switch was specified
   \param args The arguments to the switch, guarantied to have size of argn
   \param settings The settings to store the information in

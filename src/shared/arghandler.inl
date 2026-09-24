@@ -42,7 +42,7 @@ public:
 	typedef DstArgHandler<T> p_t;
 	const T src;
 	ConstSetter(T & arg, const T s): p_t(arg), src(s) {};
-	bool operator() (const char **, CommandLineParserBase & cp, char * ps) {
+	bool operator() (const char * const *, CommandLineParserBase & cp, char * ps) {
 		p_t::realDst(cp, ps)=src;
 		return true;
 	}
@@ -82,7 +82,7 @@ struct MapSetter: public DstArgHandler< QList< typename T::T > > {
 		p_t::argn.push_back(keyName);
 		p_t::argn.push_back(valueName);
 	}
-	virtual bool operator() (const char ** args, CommandLineParserBase & cp, char * ps) {
+	virtual bool operator() (const char * const * args, CommandLineParserBase & cp, char * ps) {
 		p_t::realDst(cp, ps).append( T()(args[0], args[1]) );
 		return true;
 	}
@@ -93,7 +93,7 @@ struct StringListSetter: public DstArgHandler<QList<QString> > {
 	StringListSetter(QList<QString> & a, QString valueName) : p_t (a) {
 		p_t::argn.push_back(valueName);
 	}
-	virtual bool operator() (const char ** args, CommandLineParserBase & cp, char * ps) {
+	virtual bool operator() (const char * const * args, CommandLineParserBase & cp, char * ps) {
 		p_t::realDst(cp, ps).append( args[0] );
 		return true;
 	}
@@ -122,7 +122,7 @@ struct SomeSetter: public DstArgHandler<typename TT::T > {
 		p_t::argn.push_back(an);
 	}
 
-	bool operator() (const char ** vals, CommandLineParserBase & cp, char * ps) {
+	bool operator() (const char * const * vals, CommandLineParserBase & cp, char * ps) {
 		bool ok;
 		p_t::realDst(cp, ps) = TT::strToT(vals[0], ok);
 		return ok;
@@ -218,7 +218,7 @@ template <typename T> struct Caller: public ArgHandler {
 	Caller(QString a1) {
 		argn.push_back(a1);
 	}
-	bool operator() (const char **vals, CommandLineParserBase & s, char * page) {
+	bool operator() (const char * const *vals, CommandLineParserBase & s, char * page) {
 		return T()(vals, s, page);
 	}
 };
