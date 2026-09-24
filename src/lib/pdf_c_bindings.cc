@@ -52,8 +52,6 @@
  * - \b web.defaultEncoding What encoding should we guess content is using if they do not
  *      specify it properly? E.g. "utf-8"
  * - \b web.userStyleSheet Url er path to a user specified style sheet.
- * - \b web.enablePlugins Should we enable NS plugins, must be either "true" or "false".
- *      Enabling this will have limited success.
  *
  * \section pageLoad Object Specific loading settings
  * The following settings apply for object loading.
@@ -105,18 +103,13 @@
  * - \b size.height The height of the output document, e.g. "12in".
  * - \b orientation The orientation of the output document, must be either "Landscape" or "Portrait".
  * - \b colorMode Should the output be printed in color or gray scale, must be either "Color" or "Grayscale"
- * - \b resolution Most likely has no effect.
  * - \b dpi What dpi should we use when printing, e.g. "80".
  * - \b pageOffset A number that is added to all page numbers when printing headers, footers and table of content.
- * - \b copies How many copies should we print?. e.g. "2".
- * - \b collate Should the copies be collated? Must be either "true" or "false".
  * - \b outline Should a outline (table of content in the sidebar) be generated and put into the PDF? Must be either "true" or false".
 
  * - \b outlineDepth The maximal depth of the outline, e.g. "4".
- * - \b dumpOutline If not set to the empty string a XML representation of the outline is dumped to this file.
  * - \b out The path of the output file, if "-" output is sent to stdout, if empty the output is stored in a buffer.
  * - \b documentTitle The title of the PDF document.
- * - \b useCompression Should we use loss less compression when creating the pdf file? Must be either "true" or "false".
  * - \b margin.top Size of the top margin, e.g. "2cm"
  * - \b margin.bottom Size of the bottom margin, e.g. "2cm"
  * - \b margin.left Size of the left margin, e.g. "2cm"
@@ -143,7 +136,6 @@
  * - \b useLocalLinks Should internal links in the HTML document be converted into pdf
  *      references? Must be either "true" or "false"
  * - \b replacements TODO
- * - \b produceForms Should we turn HTML forms into PDF forms? Must be either "true" or file".
  * - \b load.* Page specific settings related to loading content, see \ref pageLoad.
  * - \b web.* See \ref pageWeb.
  * - \b includeInOutline Should the sections from this document be included in the outline and table of content?
@@ -721,7 +713,7 @@ CAPI(long) wkhtmltopdf_get_output(wkhtmltopdf_converter * converter, const unsig
 //  LocalWords:  objectSettings utf CropSettings HeaderFooter ImageGlobal dpi sa
 //  LocalWords:  PdfGlobal PdfObject TableOfContent pagePdfGlobal pagePdfObject
 //  LocalWords:  pageImageGlobal pageGlobalLoad pageSize colorMode Grayscale
-//  LocalWords:  pageOffset outlineDepth dumpOutline stdout pageLoad pageWeb aa
+//  LocalWords:  pageOffset outlineDepth stdout pageLoad pageWeb aa
 //  LocalWords:  includeInOutline pagesCount tocXsl xsl struct typedef str CAPI
 //  LocalWords:  param STRINGIZEE STRINGIZE deinit qApp strcpy wkhtmltox arg ug
 //  LocalWords:  WS MACX MyLooksStyle setStyle isNull qstrncpy MyPdfConverter

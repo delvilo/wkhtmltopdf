@@ -42,17 +42,16 @@ void PdfCommandLineParser::manpage(FILE * fd) const {
  	outputManName(o);
  	outputSynopsis(o);
  	outputDescripton(o);
-	outputSwitches(o, true, false);
+	outputSwitches(o, true);
 	outputProxyDoc(o);
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
  	outputHeaderFooterDoc(o);
  	outputOutlineDoc(o);
 	outputTableOfContentDoc(o);
 #else
-	outputNotPatched(o,true);
+	outputNotPatched(o);
 #endif
 	outputPageSizes(o);
-	outputArgsFromStdin(o);
  	outputPageBreakDoc(o);
  	outputContact(o);
  	outputAuthors(o);
@@ -65,50 +64,22 @@ void PdfCommandLineParser::manpage(FILE * fd) const {
   \param extended Should we show extended arguments
 */
 void PdfCommandLineParser::usage(FILE * fd, bool extended) const {
-	Outputter * o = Outputter::text(fd,false);
+	Outputter * o = Outputter::text(fd);
 	outputName(o);
 	outputSynopsis(o);
  	outputDescripton(o);
-	outputSwitches(o, extended, false);
+	outputSwitches(o, extended);
 #ifndef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	outputNotPatched(o, true);
+	outputNotPatched(o);
 #endif
 	if (extended) {
 		outputPageSizes(o);
-		outputArgsFromStdin(o);
 		outputProxyDoc(o);
 		outputHeaderFooterDoc(o);
 		outputOutlineDoc(o);
 		outputTableOfContentDoc(o);
 	}
  	outputContact(o);
-	delete o;
-}
-
-/*!
-  Output the readme/manual
-  \param fd The file to output to
-  \param html Do we want the html manual, or the README
-*/
-void PdfCommandLineParser::readme(FILE * fd, bool html) const {
-	Outputter * o = html?Outputter::html(fd):Outputter::text(fd, true);
-	outputDocStart(o);
-	outputContact(o);
-	outputNotPatched(o, false);
-	outputLicense(o);
-	outputAuthors(o);
-	outputSynopsis(o);
-	outputSwitches(o, true, true);
- 	outputProxyDoc(o);
- 	outputHeaderFooterDoc(o);
- 	outputOutlineDoc(o);
-	outputTableOfContentDoc(o);
- 	outputPageBreakDoc(o);
-	outputPageSizes(o);
-	outputArgsFromStdin(o);
-	outputStaticProblems(o);
-	outputInstallation(o);
-	outputExamples(o);
 	delete o;
 }
 
@@ -140,7 +111,7 @@ void PdfCommandLineParser::readme(FILE * fd, bool html) const {
  * \param argc the number of command line arguments
  * \param argv a NULL terminated list with the arguments
  */
-void PdfCommandLineParser::parseArguments(int argc, const char ** argv, bool fromStdin) {
+void PdfCommandLineParser::parseArguments(int argc, const char ** argv) {
 	bool defaultMode = false;
 	int arg=1;
 
@@ -151,8 +122,6 @@ void PdfCommandLineParser::parseArguments(int argc, const char ** argv, bool fro
 		if (argv[arg][0] != '-' || argv[arg][1] == '\0' || defaultMode) break;
 		parseArg(global | page, argc, argv, defaultMode, arg, (char *)&def);
 	}
-
-	if (readArgsFromStdin && !fromStdin) return;
 
 	//Parse page options
 	while (arg < argc-1) {

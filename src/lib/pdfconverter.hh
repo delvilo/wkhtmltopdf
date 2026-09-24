@@ -43,8 +43,6 @@ private:
 	PdfConverterPrivate * d;
 	virtual ConverterPrivate & priv();
 	friend class PdfConverterPrivate;
-signals:
-	void producingForms(bool);
 };
 
 }

@@ -34,6 +34,15 @@ struct LoadErrorHandlingTM: public SomeSetterTM<LoadPage::LoadErrorHandling> {
 };
 typedef SomeSetter<LoadErrorHandlingTM> LoadErrorHandlingSetting;
 
+struct MediaLoadErrorHandlingTM: public LoadErrorHandlingTM {
+    static LoadPage::LoadErrorHandling strToT(const char * val, bool & ok) {
+        LoadPage::LoadErrorHandling result = LoadErrorHandlingTM::strToT(val, ok);
+        if (result == LoadPage::skip) ok = false;
+        return result;
+    }
+};
+typedef SomeSetter<MediaLoadErrorHandlingTM> MediaLoadErrorHandlingSetting;
+
 struct ProxyTM: public SomeSetterTM<Proxy> {
 	static Proxy strToT(const char * val, bool &ok) {
 		return strToProxy(val, &ok);
@@ -64,17 +73,6 @@ struct HelpFunc {
 struct ManPageFunc {
 	bool operator()(const char **, CommandLineParserBase & p, char *) {
 		p.manpage(stdout);
-		exit(0);
-	}
-};
-
-/*!
-  Lambda: Call the man method
-*/
-template <bool T>
-struct ReadmeFunc {
-	bool operator()(const char **, CommandLineParserBase & p, char *) {
-		p.readme(stdout, T);
 		exit(0);
 	}
 };
@@ -164,8 +162,6 @@ void CommandLineParserBase::addDocArgs() {
 	extended(true);
  	qthack(false);
 	addarg("manpage", 0, "Output program man page", new Caller<ManPageFunc>());
- 	addarg("htmldoc", 0, "Output program html help", new Caller<ReadmeFunc<true> >());
- 	addarg("readme", 0, "Output program readme", new Caller<ReadmeFunc<false> >());
 }
 
 
@@ -179,9 +175,6 @@ void CommandLineParserBase::addGlobalLoadArgs(LoadGlobal & s) {
 void CommandLineParserBase::addWebArgs(Web & s) {
 	extended(true);
  	qthack(false);
-
-	addarg("enable-plugins",0,"Enable installed plugins (plugins will likely not work)", new ConstSetter<bool>(s.enablePlugins,true));
- 	addarg("disable-plugins",0,"Disable installed plugins", new ConstSetter<bool>(s.enablePlugins,false));
 
 	addarg("minimum-font-size",0,"Minimum font size", new IntSetter(s.minimumFontSize,"int"));
  	addarg("user-style-sheet",0,"Specify a user style sheet, to load with every page", new QStrSetter(s.userStyleSheet,"path"));
@@ -211,7 +204,7 @@ void CommandLineParserBase::addPageLoadArgs(LoadPage & s) {
 	addarg("ssl-key-password",0,"Password to ssl client cert private key", new QStrSetter(s.clientSslKeyPassword, "password"));
 	addarg("ssl-crt-path",0,"Path to the ssl client cert public key in OpenSSL PEM format, optionally followed by intermediate ca and trusted certs", new QStrSetter(s.clientSslCrtPath, "path"));
 	addarg("load-error-handling", 0, "Specify how to handle pages that fail to load: abort, ignore or skip", new LoadErrorHandlingSetting(s.loadErrorHandling, "handler"));
-	addarg("load-media-error-handling", 0, "Specify how to handle media files that fail to load: abort, ignore or skip", new LoadErrorHandlingSetting(s.mediaLoadErrorHandling, "handler"));
+	addarg("load-media-error-handling", 0, "Specify how to handle media files that fail to load: abort or ignore", new MediaLoadErrorHandlingSetting(s.mediaLoadErrorHandling, "handler"));
 	addarg("custom-header",0,"Set an additional HTTP header (repeatable)", new MapSetter<>(s.customHeaders, "name", "value"));
 	addarg("custom-header-propagation",0,"Add HTTP headers specified by --custom-header for each resource request.", new ConstSetter<bool>(s.repeatCustomHeaders, true));
 	addarg("no-custom-header-propagation",0,"Do not add HTTP headers specified by --custom-header for each resource request.", new ConstSetter<bool>(s.repeatCustomHeaders, true));
@@ -236,8 +229,4 @@ void CommandLineParserBase::addPageLoadArgs(LoadPage & s) {
 	addarg("no-stop-slow-scripts", 0, "Do not Stop slow running javascripts", new ConstSetter<bool>(s.stopSlowScripts, false));
 	addarg("run-script", 0, "Run this additional javascript after the page is done loading (repeatable)", new StringListSetter(s.runScript, "js"));
 
-	addarg("checkbox-svg", 0, "Use this SVG file when rendering unchecked checkboxes", new QStrSetter(s.checkboxSvg, "path", ""));
-	addarg("checkbox-checked-svg", 0, "Use this SVG file when rendering checked checkboxes", new QStrSetter(s.checkboxCheckedSvg, "path" ,""));
-	addarg("radiobutton-svg", 0, "Use this SVG file when rendering unchecked radiobuttons", new QStrSetter(s.radiobuttonSvg, "path", ""));
-	addarg("radiobutton-checked-svg", 0, "Use this SVG file when rendering checked radiobuttons", new QStrSetter(s.radiobuttonCheckedSvg, "path", ""));
 }

@@ -52,8 +52,6 @@ struct DLL_PUBLIC Web {
 	//! Stylesheet supplied by the user
 	QString userStyleSheet;
 
-	//! Should plugins be allowed
-	bool enablePlugins;
 };
 
 }

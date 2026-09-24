@@ -7,6 +7,9 @@ entirely "headless" and do not require a display or display service.
 
 See https://wkhtmltopdf.org for updated documentation.
 
+This fork has a reduced option set. See [removed options and migration](docs/removed-options.md)
+before reusing commands or library settings from upstream.
+
 ## Building
 wkhtmltopdf has its own dedicated repository for building and packaging.
 

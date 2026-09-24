@@ -60,27 +60,6 @@ void CommandLineParserBase::outputAuthors(Outputter * o) const {
 }
 
 /*!
-  Output information on the problems with the static version
-  \param o The outputter to output to
-*/
-void CommandLineParserBase::outputStaticProblems(Outputter * o) const {
-	o->beginSection("Static version");
-	o->beginParagraph();
-	o->text("On the wkhtmltopdf website you can download a static version of wkhtmltopdf ");
-	o->link("https://wkhtmltopdf.org/downloads.html");
-	o->text(". This static binary will work on most systems and comes with a build in patched QT.");
-	o->endParagraph();
-
-	o->beginParagraph();
-	o->text("Unfortunately the static binary is not particularly static, on Linux it depends "
-			"on both glibc and openssl, furthermore you will need to have an xserver installed "
-			"but not necessary running. You will need to have different fonts install including "
-			"xfonts-scalable (Type1), and msttcorefonts.");
-	o->endParagraph();
-	o->endSection();
-}
-
-/*!
   Output documentation about the proxy settings
   \param o The outputter to output to
 */

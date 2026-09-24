@@ -17,7 +17,7 @@
 
 HEADERS +=  ../shared/progressfeedback.hh
 
-SOURCES += ../shared/outputter.cc ../shared/manoutputter.cc ../shared/htmloutputter.cc \
+SOURCES += ../shared/outputter.cc ../shared/manoutputter.cc \
            ../shared/textoutputter.cc ../shared/arghandler.cc ../shared/commondocparts.cc \
  	   ../shared/commandlineparserbase.cc ../shared/commonarguments.cc \
 	   ../shared/progressfeedback.cc

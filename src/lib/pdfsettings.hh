@@ -89,9 +89,6 @@ struct DLL_PUBLIC PdfGlobal {
 	//! Log level
 	LogLevel logLevel;
 
-	//! Should we use the graphics system
-	bool useGraphics;
-
 	//! Should relative links be resolved or kept as-is
 	bool resolveRelativeLinks;
 
@@ -101,20 +98,11 @@ struct DLL_PUBLIC PdfGlobal {
 	//! Color or grayscale
 	QPrinter::ColorMode colorMode;
 
-	//! What overall resolution should we use
-	QPrinter::PrinterMode resolution;
-
 	//! What dpi should be used when printing
 	int dpi;
 
 	//! When pagenumbers are printed, apply this offset to them all
 	int pageOffset;
-
-	//! How many copies do we wan to print
-	int copies;
-
-	//! Should be print a whole copy before beginning the next
-	bool collate;
 
 	//! Should we generate an outline and put it into the pdf file
 	bool outline;
@@ -122,15 +110,10 @@ struct DLL_PUBLIC PdfGlobal {
 	//! Maximal depth of the generated outline
 	int outlineDepth;
 
-	//! dump outline to this filename
-	QString dumpOutline;
-
 	//! The file where in to store the output
 	QString out;
 
 	QString documentTitle;
-
-	bool useCompression;
 
 	//! Margin related settings
 	Margin margin;
@@ -189,9 +172,6 @@ struct DLL_PUBLIC PdfObject {
 	//! Replacements
 	QList< QPair<QString, QString> > replacements;
 
-	//! Convert forms on the pages into PDF forms
-	bool produceForms;
-
 	LoadPage load;
 
 	Web web;
@@ -216,9 +196,6 @@ DLL_PUBLIC QString unitRealToStr(const UnitReal & ur, bool * ok);
 
 DLL_PUBLIC QPrinter::Orientation strToOrientation(const char * s, bool * ok=0);
 DLL_PUBLIC QString orientationToStr(QPrinter::Orientation o);
-
-DLL_PUBLIC QPrinter::PrinterMode strToPrinterMode(const char * s, bool * ok=0);
-DLL_PUBLIC QString printerModeToStr(QPrinter::PrinterMode o);
 
 DLL_PUBLIC QPrinter::ColorMode strToColorMode(const char * s, bool * ok=0);
 DLL_PUBLIC QString colorModeToStr(QPrinter::ColorMode o);

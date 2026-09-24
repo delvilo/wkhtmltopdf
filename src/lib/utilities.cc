@@ -20,20 +20,13 @@
 
 
 #include "utilities.hh"
-#include <QDebug>
 #include <QTextStream>
 #include <QMetaEnum>
 #include <QNetworkReply>
 
-void loadSvg(QSvgRenderer * & ptr, const QString & path, const char * def, int w, int h) {
+static void loadSvg(QSvgRenderer * & ptr, const char * def, int w, int h) {
 	 delete ptr;
 	 ptr = 0;
-	 if (path != "") {
-	 	ptr = new QSvgRenderer(path);
-		if (ptr->isValid()) return;
-		qWarning() << "Failed to load " << path;
-		delete ptr;
-	 }
 
 	 QByteArray a;
 	 QTextStream s(&a, QIODevice::WriteOnly );
@@ -74,29 +67,16 @@ void loadSvg(QSvgRenderer * & ptr, const QString & path, const char * def, int w
 "<rect x=\"10\" y=\"2\" width=\"1\" height=\"9\" fill=\"#ffffff\" stroke=\"\" stroke-width=\"0\" />\n" \
 "<rect x=\"2\" y=\"2\" width=\"8\" height=\"8\" fill=\"#ffffff\" stroke=\"\" stroke-width=\"0\" />\n"
 
-void MyLooksStyle::setCheckboxSvg(const QString & path) {
-	loadSvg(checkbox, path,
-			CB, 12, 12);
+MyLooksStyle::MyLooksStyle() {
+    if (!checkbox) loadSvg(checkbox, CB, 12, 12);
+    if (!checkbox_checked) loadSvg(checkbox_checked,
+        CB "<path d=\"M 3 5.5 L 3 8 L 5.5 10.5 L 10 5.5 L 10 2.5 L 5.5 7.5\" fill=\"black\" />\n",
+        12, 12);
+    if (!radiobutton) loadSvg(radiobutton, RB, 11, 11);
+    if (!radiobutton_checked) loadSvg(radiobutton_checked,
+        RB "<circle id=\"c2\" cx=\"5.5\" cy=\"5.5\" r=\"1.5\" fill=\"black\" stroke=\"\" stroke-width=\"0\"/>\n",
+        11, 11);
 }
-void MyLooksStyle::setCheckboxCheckedSvg(const QString & path) {
-	loadSvg(checkbox_checked, path,
-			CB
-			"<path d=\"M 3 5.5 L 3 8 L 5.5 10.5 L 10 5.5 L 10 2.5 L 5.5 7.5\" fill=\"black\" />\n",
-			12, 12);
-}
-void MyLooksStyle::setRadioButtonSvg(const QString & path) {
-	loadSvg(radiobutton, path, RB, 11, 11);
-}
-void MyLooksStyle::setRadioButtonCheckedSvg(const QString & path) {
-	loadSvg(radiobutton_checked, path,
-			RB
-			"<circle id=\"c2\" cx=\"5.5\" cy=\"5.5\" r=\"1.5\" fill=\"black\" stroke=\"\" stroke-width=\"0\"/>\n", 11, 11);
-}
-
-MyLooksStyle::MyLooksStyle(): weAreDrawingForms(false) {
-}
-
-void MyLooksStyle::producingForms(bool f) {weAreDrawingForms=f;}
 
 void MyLooksStyle::drawPrimitive( PrimitiveElement element, const QStyleOption * option, QPainter * painter, const QWidget * widget) const {
 	painter->setBrush(Qt::white);
@@ -107,9 +87,9 @@ void MyLooksStyle::drawPrimitive( PrimitiveElement element, const QStyleOption *
 	if (element == QStyle::PE_PanelLineEdit) {
 		painter->drawRect(r);
 	} else if (element == QStyle::PE_IndicatorCheckBox) {
-		if (weAreDrawingForms || ((option->state & QStyle::State_On)? !checkbox_checked: !checkbox)) {
+		if ((option->state & QStyle::State_On)? !checkbox_checked: !checkbox) {
 			painter->drawRect(r);
-			if (!weAreDrawingForms && (option->state & QStyle::State_On)) {
+			if (option->state & QStyle::State_On) {
 				r.translate(int(r.width()*0.075), int(r.width()*0.075));
 				painter->drawLine(r.topLeft(), r.bottomRight());
 				painter->drawLine(r.topRight(), r.bottomLeft());
@@ -119,9 +99,9 @@ void MyLooksStyle::drawPrimitive( PrimitiveElement element, const QStyleOption *
 		else
 			checkbox->render(painter, r);
 	} else if (element == QStyle::PE_IndicatorRadioButton) {
-		if (weAreDrawingForms || ((option->state & QStyle::State_On)? !radiobutton_checked: !radiobutton)) {
+		if ((option->state & QStyle::State_On)? !radiobutton_checked: !radiobutton) {
 			painter->drawEllipse(r);
-			if (!weAreDrawingForms && (option->state & QStyle::State_On)) {
+			if (option->state & QStyle::State_On) {
 				r.translate(int(r.width()*0.20), int(r.width()*0.20));
 				r.setWidth(int(r.width()*0.70));
 				r.setHeight(int(r.height()*0.70));

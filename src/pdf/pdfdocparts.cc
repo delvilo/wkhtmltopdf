@@ -77,9 +77,8 @@ void PdfCommandLineParser::outputSynopsis(Outputter * o) const {
 			"further more the options from the ");
 	o->sectionLink("TOC Options");
 	o->text(" section can also be applied. The table of contents is generated via XSLT which means "
-			"that it can be styled to look however you want it to look. To get an idea of how to "
-			"do this you can dump the default xslt document by supplying the --dump-default-toc-xsl, and the outline it works on by supplying --dump-outline, see the ");
-	o->sectionLink("Outline Options");
+			"that it can be styled using --xsl-style-sheet. See the ");
+	o->sectionLink("Table Of Contents");
 	o->text(" section.");
 	o->endParagraph();
 
@@ -108,19 +107,12 @@ void PdfCommandLineParser::outputDescripton(Outputter * o) const {
 /*!
   Add explanation about reduced functionality without patched qt/webkit
   \param o The outputter to output to
-  \param sure Is the functionality restricted in this wkhtmltopdf
 */
-void PdfCommandLineParser::outputNotPatched(Outputter * o, bool sure) const {
+void PdfCommandLineParser::outputNotPatched(Outputter * o) const {
 	o->beginSection("Reduced Functionality");
-	if (sure)
-		o->paragraph("This version of wkhtmltopdf has been compiled against a version of "
-					 "QT without the wkhtmltopdf patches. Therefore some features are missing, "
-					 "if you need these features please use the static version.");
-	else
-		o->paragraph("Some versions of wkhtmltopdf are compiled against a version of QT "
-					 "without the wkhtmltopdf patches. These versions are missing some features, "
-					 "you can find out if your version of wkhtmltopdf is one of these by running wkhtmltopdf --version "
-					 "if your version is against an unpatched QT, you can use the static version to get all functionality.");
+	o->paragraph("This version of wkhtmltopdf has been compiled against a version of "
+				 "QT without the wkhtmltopdf patches. Therefore some features are missing, "
+				 "if you need these features please use the static version.");
 
 	o->paragraph("Currently the list of features only supported with patch QT includes:");
 	o->beginList();
@@ -233,16 +225,9 @@ void PdfCommandLineParser::outputTableOfContentDoc(Outputter * o) const {
 	o->paragraph("The table of contents is generated based on the H tags in the input "
 				 "documents. First a XML document is generated, then it is converted to "
 				 "HTML using XSLT.");
-	o->paragraph("The generated XML document can be viewed by dumping it to a file using "
-				 "the --dump-outline switch. For example:");
-	o->verbatim("wkhtmltopdf --dump-outline toc.xml https://doc.qt.io/archives/qt-4.8/qstring.html qstring.pdf\n");
 	o->paragraph("The XSLT document can be specified using the --xsl-style-sheet switch. "
 				 "For example:");
 	o->verbatim("wkhtmltopdf toc --xsl-style-sheet my.xsl https://doc.qt.io/archives/qt-4.8/qstring.html qstring.pdf\n");
-	o->paragraph("The --dump-default-toc-xsl switch can be used to dump the default "
-				 "XSLT style sheet to stdout. This is a good start for writing your "
-				 "own style sheet");
-	o->verbatim("wkhtmltopdf --dump-default-toc-xsl");
 	o->paragraph("The XML document is in the namespace "
 				 "\"http://wkhtmltopdf.org/outline\", "
 				 "it has a root node called \"outline\" which contains a number of "
@@ -297,52 +282,6 @@ void PdfCommandLineParser::outputContact(Outputter * o) const {
 }
 
 /*!
-  Output beginning of the readme
-  \param o The outputter to output to
-*/
-void PdfCommandLineParser::outputDocStart(Outputter * o) const {
-	o->beginSection("wkhtmltopdf " STRINGIZE(FULL_VERSION) " Manual");
-	o->paragraph("This file documents wkhtmltopdf, a program capable of converting html "
-				 "documents into PDF documents.");
-	o->endSection();
-}
-
-/*!
-  Output information on how to use read-args-from-stdin
-  \param o The outputter to output to
-*/
-void PdfCommandLineParser::outputArgsFromStdin(Outputter * o) const {
-	o->beginSection("Reading arguments from stdin");
-	o->paragraph("If you need to convert a lot of pages in a batch, and you feel that wkhtmltopdf "
-				 "is a bit too slow to start up, then you should try --read-args-from-stdin,");
-	o->paragraph("When --read-args-from-stdin each line of input sent to wkhtmltopdf on stdin "
-				 "will act as a separate invocation of wkhtmltopdf, with the arguments specified "
-				 "on the given line combined with the arguments given to wkhtmltopdf");
-	o->paragraph("For example one could do the following:");
-	o->verbatim("echo \"https://doc.qt.io/archives/qt-4.8/qapplication.html qapplication.pdf\" >> cmds\n"
-				"echo \"cover google.com https://en.wikipedia.org/wiki/Qt_(software) qt.pdf\" >> cmds\n"
-				"wkhtmltopdf --read-args-from-stdin --book < cmds\n");
-	o->endSection();
-}
-
-/*!
-  Output information on how to install
-  \param o The outputter to output to
-*/
-void PdfCommandLineParser::outputInstallation(Outputter * o) const {
-	o->beginSection("Installation");
-	o->paragraph(
-		"There are several ways to install wkhtmltopdf.  You can download a "
-		"already compiled binary, or you can compile wkhtmltopdf yourself. "
-		"On windows the easiest way to install wkhtmltopdf is to download "
-		"the latest installer. On Linux you can download the latest static "
-		"binary, however you still need to install some other pieces of "
-		"software, to learn more about this read the static version section "
-		"of the manual.");
-	o->endSection();
-}
-
-/*!
   Output documentation about page sizes
   \param o The outputter to output to
 
@@ -358,24 +297,6 @@ void PdfCommandLineParser::outputPageSizes(Outputter * o) const {
 	o->endParagraph();
 	o->paragraph("For a more fine grained control over the page size the "
 				 "--page-height and --page-width options may be used");
-	o->endSection();
-}
-
-/*!
-  Output examples on how to use wkhtmltopdf
-  \param o The outputter to output to
-*/
-void PdfCommandLineParser::outputExamples(Outputter * o) const {
-	o->beginSection("Examples");
-	o->paragraph("This section presents a number of examples of how to invoke wkhtmltopdf.");
-	o->paragraph("To convert a remote HTML file to PDF:");
-	o->verbatim("wkhtmltopdf https://www.google.com google.pdf\n");
-	o->paragraph("To convert a local HTML file to PDF:");
-	o->verbatim("wkhtmltopdf my.html my.pdf\n");
-	o->paragraph("Produce the eler2.pdf sample file:");
-	o->verbatim("wkhtmltopdf -H  https://geekz.co.uk/lovesraymond/archive/eler-highlights-2008 eler2.pdf\n");
-	o->paragraph("Printing a book with a table of contents:");
-	o->verbatim("wkhtmltopdf -H cover cover.html toc chapter1.html chapter2.html chapter3.html book.pdf\n");
 	o->endSection();
 }
 

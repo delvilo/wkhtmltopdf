@@ -54,8 +54,6 @@ struct DLL_PUBLIC ImageGlobal {
 
 	//! Crop related settings
 	CropSettings crop;
-	//! Scale related settings
-	// ScaleSettings scale;
 
 	LoadGlobal loadGlobal;
 	LoadPage loadPage;
@@ -65,9 +63,6 @@ struct DLL_PUBLIC ImageGlobal {
 	LogLevel logLevel;
 
 	bool transparent;
-
-	//! Should we use the graphics system
-	bool useGraphics;
 
 	QString in;
 	//! The file for output

@@ -1,5 +1,5 @@
 Name:
-  wkhtmltopdf 0.12.6 (with patched qt)
+  wkhtmltopdf 0.12.7-dev (with patched qt)
 
 Synopsis:
   wkhtmltopdf [GLOBAL OPTION]... [OBJECT]... <output file>
@@ -34,31 +34,21 @@ Document objects:
   All options that can be specified for a page object can also be specified for
   a toc, further more the options from the TOC Options section can also be
   applied. The table of contents is generated via XSLT which means that it can
-  be styled to look however you want it to look. To get an idea of how to do
-  this you can dump the default xslt document by supplying the
-  --dump-default-toc-xsl, and the outline it works on by supplying
-  --dump-outline, see the Outline Options section.
+  be styled using --xsl-style-sheet. See the Table Of Contents section.
 
 Description:
   Converts one or more HTML pages into a PDF document, using wkhtmltopdf patched
   qt.
 
 Global Options:
-      --collate                       Collate when printing multiple copies
-                                      (default)
-      --no-collate                    Do not collate when printing multiple
-                                      copies
       --cookie-jar <path>             Read and write cookies from and to the
                                       supplied cookie jar file
-      --copies <number>               Number of copies to print into the pdf
-                                      file (default 1)
   -d, --dpi <dpi>                     Change the dpi explicitly (this has no
                                       effect on X11 based systems) (default 96)
   -H, --extended-help                 Display more extensive help, detailing
                                       less common command switches
   -g, --grayscale                     PDF will be generated in grayscale
   -h, --help                          Display help
-      --htmldoc                       Output program html help
       --image-dpi <integer>           When embedding images scale them down to
                                       this dpi (default 600)
       --image-quality <integer>       When jpeg compressing images use this
@@ -66,8 +56,6 @@ Global Options:
       --license                       Output license information and exit
       --log-level <level>             Set log level to: none, error, warn or
                                       info (default info)
-  -l, --lowquality                    Generates lower quality pdf/ps. Useful to
-                                      shrink the result document space
       --manpage                       Output program man page
   -B, --margin-bottom <unitreal>      Set the page bottom margin
   -L, --margin-left <unitreal>        Set the page left margin (default 10mm)
@@ -79,24 +67,12 @@ Global Options:
   -s, --page-size <Size>              Set paper size to: A4, Letter, etc.
                                       (default A4)
       --page-width <unitreal>         Page width
-      --no-pdf-compression            Do not use lossless compression on pdf
-                                      objects
-  -q, --quiet                         Be less verbose, maintained for backwards
-                                      compatibility; Same as using --log-level
-                                      none
-      --read-args-from-stdin          Read command line arguments from stdin
-      --readme                        Output program readme
       --title <text>                  The title of the generated pdf file (The
                                       title of the first document is used if not
                                       specified)
-      --use-xserver                   Use the X server (some plugins and other
-                                      stuff might not work without X11)
   -V, --version                       Output version information and exit
 
 Outline Options:
-      --dump-default-toc-xsl          Dump the default TOC xsl style sheet to
-                                      stdout
-      --dump-outline <file>           Dump the outline to a file
       --outline                       Put an outline into the pdf (default)
       --no-outline                    Do not put an outline into the pdf
       --outline-depth <level>         Set the depth of the outline (default 4)
@@ -108,10 +84,6 @@ Page Options:
       --no-background                 Do not print background
       --bypass-proxy-for <value>      Bypass proxy for host (repeatable)
       --cache-dir <path>              Web cache directory
-      --checkbox-checked-svg <path>   Use this SVG file when rendering checked
-                                      checkboxes
-      --checkbox-svg <path>           Use this SVG file when rendering unchecked
-                                      checkboxes
       --cookie <name> <value>         Set an additional cookie (repeatable),
                                       value should be url encoded.
       --custom-header <name> <value>  Set an additional HTTP header (repeatable)
@@ -122,18 +94,9 @@ Page Options:
       --debug-javascript              Show javascript debugging output
       --no-debug-javascript           Do not show javascript debugging output
                                       (default)
-      --default-header                Add a default header, with the name of the
-                                      page to the left, and the page number to
-                                      the right, this is short for:
-                                      --header-left='[webpage]'
-                                      --header-right='[page]/[toPage]' --top 2cm
-                                      --header-line
       --encoding <encoding>           Set the default text encoding, for input
       --disable-external-links        Do not make links to remote web pages
       --enable-external-links         Make links to remote web pages (default)
-      --disable-forms                 Do not turn HTML form fields into pdf form
-                                      fields (default)
-      --enable-forms                  Turn HTML form fields into pdf form fields
       --images                        Do load or print images (default)
       --no-images                     Do not load or print images
       --disable-internal-links        Do not make local links
@@ -149,7 +112,7 @@ Page Options:
                                       load: abort, ignore or skip (default
                                       abort)
       --load-media-error-handling <handler> Specify how to handle media files
-                                      that fail to load: abort, ignore or skip
+                                      that fail to load: abort or ignore
                                       (default ignore)
       --disable-local-file-access     Do not allowed conversion of a local file
                                       to read in other local files, unless
@@ -163,9 +126,6 @@ Page Options:
                                       and outlines (default)
       --page-offset <offset>          Set the starting page number (default 0)
       --password <password>           HTTP Authentication password
-      --disable-plugins               Disable installed plugins (default)
-      --enable-plugins                Enable installed plugins (plugins will
-                                      likely not work)
       --post <name> <value>           Add an additional post field (repeatable)
       --post-file <name> <path>       Post an additional file (repeatable)
       --print-media-type              Use print media-type instead of screen
@@ -173,10 +133,6 @@ Page Options:
                                       screen (default)
   -p, --proxy <proxy>                 Use a proxy
       --proxy-hostname-lookup         Use the proxy for resolving hostnames
-      --radiobutton-checked-svg <path> Use this SVG file when rendering checked
-                                      radiobuttons
-      --radiobutton-svg <path>        Use this SVG file when rendering unchecked
-                                      radiobuttons
       --resolve-relative-links        Resolve relative external links into
                                       absolute links (default)
       --run-script <js>               Run this additional javascript after the
@@ -255,21 +211,6 @@ Page sizes:
 
   For a more fine grained control over the page size the --page-height and
   --page-width options may be used
-
-Reading arguments from stdin:
-  If you need to convert a lot of pages in a batch, and you feel that
-  wkhtmltopdf is a bit too slow to start up, then you should try
-  --read-args-from-stdin,
-
-  When --read-args-from-stdin each line of input sent to wkhtmltopdf on stdin
-  will act as a separate invocation of wkhtmltopdf, with the arguments specified
-  on the given line combined with the arguments given to wkhtmltopdf
-
-  For example one could do the following:
-
-  echo "https://doc.qt.io/archives/qt-4.8/qapplication.html qapplication.pdf" >> cmds
-  echo "cover google.com https://en.wikipedia.org/wiki/Qt_(software) qt.pdf" >> cmds
-  wkhtmltopdf --read-args-from-stdin --book < cmds
   
 Specifying A Proxy:
   By default proxy information will be read from the environment variables:
@@ -370,20 +311,11 @@ Table Of Contents:
   The table of contents is generated based on the H tags in the input documents.
   First a XML document is generated, then it is converted to HTML using XSLT.
 
-  The generated XML document can be viewed by dumping it to a file using the
-  --dump-outline switch. For example:
-
-  wkhtmltopdf --dump-outline toc.xml https://doc.qt.io/archives/qt-4.8/qstring.html qstring.pdf
-  
   The XSLT document can be specified using the --xsl-style-sheet switch. For
   example:
 
   wkhtmltopdf toc --xsl-style-sheet my.xsl https://doc.qt.io/archives/qt-4.8/qstring.html qstring.pdf
   
-  The --dump-default-toc-xsl switch can be used to dump the default XSLT style
-  sheet to stdout. This is a good start for writing your own style sheet
-
-  wkhtmltopdf --dump-default-toc-xsl
   The XML document is in the namespace "http://wkhtmltopdf.org/outline" it has a
   root node called "outline" which contains a number of "item" nodes. An item
   can contain any number of item. These are the outline subsections to the

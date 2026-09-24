@@ -36,7 +36,7 @@ void ImageCommandLineParser::manpage(FILE * fd) const {
  	outputManName(o);
  	outputSynopsis(o);
  	outputDescripton(o);
-	outputSwitches(o, true, false);
+	outputSwitches(o, true);
  	outputContact(o);
 	outputAuthors(o);
 	delete o;
@@ -48,39 +48,17 @@ void ImageCommandLineParser::manpage(FILE * fd) const {
   \param extended Should we show extended arguments
 */
 void ImageCommandLineParser::usage(FILE * fd, bool extended) const {
-	Outputter * o = Outputter::text(fd,false);
+	Outputter * o = Outputter::text(fd);
 	outputName(o);
 	outputSynopsis(o);
  	outputDescripton(o);
-	outputSwitches(o, extended, false);
+	outputSwitches(o, extended);
 	if (extended) {
 		outputProxyDoc(o);
 	}
  	outputContact(o);
 	delete o;
 }
-
-/*!
-  Output the readme/manual
-  \param fd The file to output to
-  \param html Do we want the html manaul, or the README
-*/
-void ImageCommandLineParser::readme(FILE * fd, bool html) const {
-	Outputter * o = html?Outputter::html(fd):Outputter::text(fd, true);
-	outputDocStart(o);
-	outputContact(o);
-	outputLicense(o);
-	outputAuthors(o);
-	outputSynopsis(o);
-	outputSwitches(o, true, true);
- 	outputProxyDoc(o);
-	outputStaticProblems(o);
-	outputCompilation(o);
-	outputInstallation(o);
-	outputExamples(o);
-	delete o;
-}
-
 
 /*!
  * Load default arguments and put them in the settings structure

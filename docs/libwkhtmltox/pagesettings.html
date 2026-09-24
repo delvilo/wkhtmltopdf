@@ -81,7 +81,7 @@ Web page specific settings</h1>
 <li><b>web.minimumFontSize</b> The minimum font size allowed. E.g. "9"</li>
 <li><b>web.defaultEncoding</b> What encoding should we guess content is using if they do not specify it properly? E.g. "utf-8"</li>
 <li><b>web.userStyleSheet</b> Url er path to a user specified style sheet.</li>
-<li><b>web.enablePlugins</b> Should we enable NS plugins, must be either "true" or "false". Enabling this will have limited success.</li>
+
 </ul>
 <h1><a class="anchor" id="pageLoad"></a>
 Object Specific loading settings</h1>
@@ -127,17 +127,17 @@ Pdf global settings</h1>
 <li><b>size.height</b> The height of the output document, e.g. "12in".</li>
 <li><b>orientation</b> The orientation of the output document, must be either "Landscape" or "Portrait".</li>
 <li><b>colorMode</b> Should the output be printed in color or gray scale, must be either "Color" or "Grayscale"</li>
-<li><b>resolution</b> Most likely has no effect.</li>
+
 <li><b>dpi</b> What dpi should we use when printing, e.g. "80".</li>
 <li><b>pageOffset</b> A number that is added to all page numbers when printing headers, footers and table of content.</li>
-<li><b>copies</b> How many copies should we print?. e.g. "2".</li>
-<li><b>collate</b> Should the copies be collated? Must be either "true" or "false".</li>
+
+
 <li><b>outline</b> Should a outline (table of content in the sidebar) be generated and put into the PDF? Must be either "true" or false".</li>
 <li><b>outlineDepth</b> The maximal depth of the outline, e.g. "4".</li>
-<li><b>dumpOutline</b> If not set to the empty string a XML representation of the outline is dumped to this file.</li>
+
 <li><b>out</b> The path of the output file, if "-" output is sent to stdout, if empty the output is stored in a buffer.</li>
 <li><b>documentTitle</b> The title of the PDF document.</li>
-<li><b>useCompression</b> Should we use loss less compression when creating the pdf file? Must be either "true" or "false".</li>
+
 <li><b>margin.top</b> Size of the top margin, e.g. "2cm"</li>
 <li><b>margin.bottom</b> Size of the bottom margin, e.g. "2cm"</li>
 <li><b>margin.left</b> Size of the left margin, e.g. "2cm"</li>
@@ -161,7 +161,7 @@ Pdf object settings</h1>
 <li><b>useExternalLinks</b> Should external links in the HTML document be converted into external pdf links? Must be either "true" or "false.</li>
 <li><b>useLocalLinks</b> Should internal links in the HTML document be converted into pdf references? Must be either "true" or "false"</li>
 <li><b>replacements</b> TODO</li>
-<li><b>produceForms</b> Should we turn HTML forms into PDF forms? Must be either "true" or file".</li>
+
 <li><b>load</b>.* Page specific settings related to loading content, see <a class="el" href="pagesettings.html#pageLoad">Object Specific loading settings</a>.</li>
 <li><b>web</b>.* See <a class="el" href="pagesettings.html#pageWeb">Web page specific settings</a>.</li>
 <li><b>includeInOutline</b> Should the sections from this document be included in the outline and table of content?</li>

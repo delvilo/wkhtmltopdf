@@ -74,10 +74,6 @@ ReflectImpl<LoadPage>::ReflectImpl(LoadPage & c) {
 	WKHTMLTOPDF_REFLECT(loadErrorHandling);
 	WKHTMLTOPDF_REFLECT(proxy);
 	WKHTMLTOPDF_REFLECT(runScript);
-	WKHTMLTOPDF_REFLECT(checkboxSvg);
-	WKHTMLTOPDF_REFLECT(checkboxCheckedSvg);
-	WKHTMLTOPDF_REFLECT(radiobuttonSvg);
-	WKHTMLTOPDF_REFLECT(radiobuttonCheckedSvg);
 	WKHTMLTOPDF_REFLECT(cacheDir);
 	WKHTMLTOPDF_REFLECT(bypassProxyForHosts);
 	WKHTMLTOPDF_REFLECT(proxyHostNameLookup);
@@ -92,7 +88,6 @@ ReflectImpl<Web>::ReflectImpl(Web & c) {
 	WKHTMLTOPDF_REFLECT(minimumFontSize);
 	WKHTMLTOPDF_REFLECT(defaultEncoding);
 	WKHTMLTOPDF_REFLECT(userStyleSheet);
-	WKHTMLTOPDF_REFLECT(enablePlugins);
 }
 
 }
