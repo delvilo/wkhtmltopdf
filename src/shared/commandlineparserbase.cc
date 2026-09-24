@@ -100,7 +100,7 @@ void CommandLineParserBase::license(FILE * fd) const {
 	delete o;
 }
 
-void CommandLineParserBase::parseArg(int sections, const int argc, const char ** argv, bool & defaultMode, int & arg, char * page) {
+void CommandLineParserBase::parseArg(int sections, const int argc, const char * const * argv, bool & defaultMode, int & arg, char * page) {
 	if (argv[arg][1] == '-') { //We have a long style argument
 		//After an -- apperas in the argument list all that follows is interpreted as default arguments
 		if (argv[arg][2] == '0') {

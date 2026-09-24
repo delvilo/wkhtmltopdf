@@ -40,7 +40,7 @@ ImageCommandLineParser::ImageCommandLineParser(wkhtmltopdf::settings::ImageGloba
 	addarg("crop-w",0,"Set width for cropping", new IntSetter(s.crop.width,"int"));
 	addarg("crop-h",0,"Set height for cropping", new IntSetter(s.crop.height,"int"));
 	addarg("format",'f',"Output file format", new QStrSetter(s.fmt, "format") );
-	addarg("quality",0,"Output image quality (between 0 and 100)", new IntSetter(s.quality, "int") );
+	addarg("quality",0,"Output image quality (0 to 100, or -1 for the encoder default)", new IntSetter(s.quality, "int") );
 
 	extended(true);
 	qthack(true);

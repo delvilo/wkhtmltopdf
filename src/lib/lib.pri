@@ -33,8 +33,8 @@ SOURCES += ../lib/pdfsettings.cc ../lib/pdfconverter.cc \
            ../lib/outline.cc ../lib/tocstylesheet.cc
 
 PUBLIC_HEADERS += ../lib/imageconverter.hh ../lib/imagesettings.hh
-HEADERS += ../lib/imageconverter_p.hh
-SOURCES += ../lib/imagesettings.cc ../lib/imageconverter.cc
+HEADERS += ../lib/imageconverter_p.hh ../lib/imageoutput.hh
+SOURCES += ../lib/imagesettings.cc ../lib/imageconverter.cc ../lib/imageoutput.cc
 
 #C-Bindings
 PUBLIC_HEADERS += ../lib/pdf.h ../lib/image.h

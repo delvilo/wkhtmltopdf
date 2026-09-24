@@ -111,7 +111,7 @@ void PdfCommandLineParser::usage(FILE * fd, bool extended) const {
  * \param argc the number of command line arguments
  * \param argv a NULL terminated list with the arguments
  */
-void PdfCommandLineParser::parseArguments(int argc, const char ** argv) {
+void PdfCommandLineParser::parseArguments(int argc, const char * const * argv) {
 	bool defaultMode = false;
 	int arg=1;
 

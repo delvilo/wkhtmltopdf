@@ -21,6 +21,8 @@
 
 #include "imagesettings.hh"
 #include "reflect.hh"
+#include <QFileInfo>
+#include <QImageWriter>
 
 #include "dllbegin.inc"
 namespace wkhtmltopdf {
@@ -69,6 +71,34 @@ ImageGlobal::ImageGlobal():
 	screenHeight(0),
 	quality(94),
 	smartWidth(true) {}
+
+QString ImageGlobal::outputFormat() const {
+	if (!fmt.isEmpty()) return fmt.toLower();
+	if (out.isEmpty() || out == "-") return "jpg";
+	return QFileInfo(out).suffix().toLower();
+}
+
+bool ImageGlobal::validate(QString & error) const {
+	error.clear();
+	if (screenWidth <= 0)
+		error = "Image width must be greater than zero";
+	else if (screenHeight < 0)
+		error = "Image height must be zero (automatic) or greater";
+	else if (quality < -1 || quality > 100)
+		error = "Image quality must be between 0 and 100, or -1 for the encoder default";
+	else if (crop.left < -1 || crop.top < -1)
+		error = "Crop offsets must be non-negative, or -1 for the default";
+	else if (crop.width < -1 || crop.height < -1 || crop.width == 0 || crop.height == 0)
+		error = "Crop dimensions must be greater than zero, or -1 for the remaining image";
+	if (!error.isEmpty()) return false;
+
+	const QString format = outputFormat();
+	if (format.isEmpty())
+		error = "Cannot determine the output image format; specify --format";
+	else if (format != "svg" && !QImageWriter::supportedImageFormats().contains(format.toLatin1()))
+		error = QString("Unsupported output image format: %1").arg(format);
+	return error.isEmpty();
+}
 
 QString ImageGlobal::get(const char * name) {
 	ReflectImpl<ImageGlobal> impl(*this);

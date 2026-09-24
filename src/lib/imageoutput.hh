@@ -18,42 +18,43 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with wkhtmltopdf.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef __IMAGECONVERTER_P_HH__
-#define __IMAGECONVERTER_P_HH__
+#ifndef WKHTMLTOPDF_IMAGEOUTPUT_HH
+#define WKHTMLTOPDF_IMAGEOUTPUT_HH
 
-#include "converter_p.hh"
-#include "imageconverter.hh"
-#include "multipageloader.hh"
+#include <QBuffer>
+#include <QFile>
+#if QT_VERSION >= 0x050100
+#include <QSaveFile>
+#else
+#include <QTemporaryFile>
+#endif
 
 #include "dllbegin.inc"
 namespace wkhtmltopdf {
 
-class DLL_LOCAL ImageConverterPrivate: public ConverterPrivate {
-	Q_OBJECT
+// File output is committed only after rendering and encoding have succeeded.
+class DLL_LOCAL ImageOutput {
 public:
-	ImageConverterPrivate(ImageConverter & o, wkhtmltopdf::settings::ImageGlobal & s, const QString * data);
-
-	wkhtmltopdf::settings::ImageGlobal settings;
-	MultiPageLoader loader;
+	ImageOutput(const QString & path, QByteArray & data);
+	bool open();
+	QIODevice * device();
+	bool commit();
+	QString errorString() const;
 private:
-	QByteArray outputData;
-	QString inputData;
-
-	ImageConverter & out;
-	void clearResources();
-	bool renderImage(QString & errorMessage);
-
-	LoaderObject * loaderObject;
-
-public slots:
-	void pagesLoaded(bool ok);
-	void beginConvert();
-
-	friend class ImageConverter;
-
-	virtual Converter & outer();
+	Q_DISABLE_COPY(ImageOutput)
+	QString path;
+	QString error;
+	QBuffer buffer;
+	QFile standardOutput;
+#if QT_VERSION >= 0x050100
+	QSaveFile file;
+#else
+	QTemporaryFile file;
+	QString targetPath;
+#endif
+	QIODevice * destination;
 };
 
 }
 #include "dllend.inc"
-#endif //__IMAGECONVERTER_P_HH__
+#endif

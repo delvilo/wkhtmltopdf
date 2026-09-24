@@ -10,6 +10,9 @@ See https://wkhtmltopdf.org for updated documentation.
 This fork has a reduced option set. See [removed options and migration](docs/removed-options.md)
 before reusing commands or library settings from upstream.
 
+See [image entry refactoring](docs/image-entry-refactoring.md) for image validation,
+file replacement behavior, and regression checks.
+
 ## Building
 wkhtmltopdf has its own dedicated repository for building and packaging.
 

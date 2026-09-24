@@ -18,42 +18,23 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with wkhtmltopdf.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef __IMAGECONVERTER_P_HH__
-#define __IMAGECONVERTER_P_HH__
+#ifndef WKHTMLTOPDF_CLIAPPLICATION_HH
+#define WKHTMLTOPDF_CLIAPPLICATION_HH
 
-#include "converter_p.hh"
-#include "imageconverter.hh"
-#include "multipageloader.hh"
+#include <QApplication>
 
-#include "dllbegin.inc"
 namespace wkhtmltopdf {
 
-class DLL_LOCAL ImageConverterPrivate: public ConverterPrivate {
-	Q_OBJECT
+// Keep help/version parsing before constructing QApplication.
+class CliApplication: public QApplication {
 public:
-	ImageConverterPrivate(ImageConverter & o, wkhtmltopdf::settings::ImageGlobal & s, const QString * data);
-
-	wkhtmltopdf::settings::ImageGlobal settings;
-	MultiPageLoader loader;
+	static void prepareEnvironment();
+	CliApplication(int & argc, char ** argv);
 private:
-	QByteArray outputData;
-	QString inputData;
-
-	ImageConverter & out;
-	void clearResources();
-	bool renderImage(QString & errorMessage);
-
-	LoaderObject * loaderObject;
-
-public slots:
-	void pagesLoaded(bool ok);
-	void beginConvert();
-
-	friend class ImageConverter;
-
-	virtual Converter & outer();
+#if QT_VERSION < 0x050000
+	static bool useGraphics();
+#endif
 };
 
 }
-#include "dllend.inc"
-#endif //__IMAGECONVERTER_P_HH__
+#endif

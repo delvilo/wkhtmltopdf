@@ -87,7 +87,7 @@ void ImageCommandLineParser::usage(FILE * fd, bool extended) const {
  * \param argc the number of command line arguments
  * \param argv a NULL terminated list with the arguments
  */
-void ImageCommandLineParser::parseArguments(int argc, const char ** argv, bool final) {
+void ImageCommandLineParser::parseArguments(int argc, const char * const * argv) {
 	settings.in="";
     settings.out="";
 	bool defaultMode=false;
@@ -101,7 +101,7 @@ void ImageCommandLineParser::parseArguments(int argc, const char ** argv, bool f
 		}
 	}
 
-	if (final || settings.in=="" || settings.out=="") {
+	if (settings.in.isEmpty() || settings.out.isEmpty()) {
         fprintf(stderr, "You need to specify at least one input file, and exactly one output file\nUse - for stdin or stdout\n\n");
         usage(stderr, false);
         exit(1);
