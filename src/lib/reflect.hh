@@ -21,10 +21,6 @@
 #ifndef __REFLECT_HH__
 #define __REFLECT_HH__
 
-#if defined(_MSC_VER) && _MSC_VER>=1600
-#define typeof decltype
-#endif
-
 #include "logging.hh"
 #include "loadsettings.hh"
 #include "websettings.hh"

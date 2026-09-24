@@ -33,7 +33,7 @@ This change implements the selected items 1, 2, 4, 6 and 7:
 ## Output behavior
 
 Qt 5.1 and later use `QSaveFile` with direct-write fallback disabled. Older Qt
-versions use a sibling `QTemporaryFile` and a platform replacement operation.
+versions use a sibling `QTemporaryFile` and Linux's rename operation.
 Existing file permissions are preserved. On the older-Qt fallback, new files
 retain the owner-only permissions of `QTemporaryFile`.
 
@@ -62,12 +62,12 @@ python3 tests/option_removal_smoke.py --bin-dir bin
 
 The image suite covers startup, validation, format inference, automatic height,
 cropping, stdin/stdout, file replacement, symbolic links, C API memory output
-and single completion callbacks. On POSIX it injects PNG and SVG write failures
+and single completion callbacks. On Linux it injects PNG and SVG write failures
 using a file-size limit and checks that old contents survive without temporary
 files. Where available, `/dev/full` checks stdout failures.
 
 Validation performed on Linux with Qt 5.15 and unpatched QtWebKit: all 13 image
 tests passed; the existing suite passed 6 tests and skipped its patched-Qt-only
 test. Auto-sized, cropped and fixed-size PNG fixtures also matched their
-pre-refactoring pixels exactly. Patched Qt 4 and Windows builds still require
-validation in their respective environments.
+pre-refactoring pixels exactly. Patched Qt 4 builds still require validation on
+Linux.

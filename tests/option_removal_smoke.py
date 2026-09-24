@@ -46,7 +46,7 @@ class OptionRemovalSmoke(unittest.TestCase):
 
     @classmethod
     def run_cli(cls, name, *args, data=None):
-        executable = BIN_DIR / (name + ('.exe' if os.name == 'nt' else ''))
+        executable = BIN_DIR / name
         return subprocess.run(
             [str(executable), *map(str, args)], input=data,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -117,9 +117,8 @@ class OptionRemovalSmoke(unittest.TestCase):
         self.assertEqual(struct.unpack('>II', result.stdout[16:24]), (160, 90))
 
     def test_c_api_settings_and_conversion(self):
-        candidates = ['libwkhtmltox.so', 'libwkhtmltox.dylib', 'wkhtmltox.dll']
-        path = next((BIN_DIR / name for name in candidates if (BIN_DIR / name).exists()), None)
-        self.assertIsNotNone(path, 'Build the shared library before running the smoke checks')
+        path = BIN_DIR / 'libwkhtmltox.so'
+        self.assertTrue(path.exists(), 'Build the shared library before running the smoke checks')
         lib = ctypes.CDLL(str(path))
         ptr = ctypes.c_void_p
         text = ctypes.c_char_p

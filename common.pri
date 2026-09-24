@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with wkhtmltopdf.  If not, see <http:#www.gnu.org/licenses/>.
 
+!linux: error("Linux is the only supported platform")
+
 CONFIG(static, shared|static):lessThan(QT_MAJOR_VERSION, 5) {
     DEFINES  += QT4_STATICPLUGIN_TEXTCODECS
     QTPLUGIN += qcncodecs qjpcodecs qkrcodecs qtwcodecs
@@ -22,9 +24,6 @@ CONFIG(static, shared|static):lessThan(QT_MAJOR_VERSION, 5) {
 
 INCLUDEPATH += ../../src/lib
 RESOURCES    = $$PWD/wkhtmltopdf.qrc
-
-win32:      CONFIG += console
-win32-g++*: QMAKE_LFLAGS += -static -static-libgcc -static-libstdc++
 
 QT += webkit network xmlpatterns svg
 greaterThan(QT_MAJOR_VERSION, 4) {

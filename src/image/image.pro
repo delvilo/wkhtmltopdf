@@ -23,19 +23,10 @@ DESTDIR = ../../bin
 DEPENDPATH += . ../shared
 INCLUDEPATH += . ../shared
 
-unix {
-    man.path=$$INSTALLBASE/share/man/man1
-    man.extra=LD_LIBRARY_PATH=../../bin/ ../../bin/wkhtmltoimage --manpage | gzip > $(INSTALL_ROOT)$$INSTALLBASE/share/man/man1/wkhtmltoimage.1.gz
-
-    QMAKE_EXTRA_TARGETS += man
-    INSTALLS += man
-}
-
-macx {
-    man.extra=DYLD_LIBRARY_PATH=../../bin/ ../../bin/wkhtmltoimage --manpage | gzip > $(INSTALL_ROOT)$$INSTALLBASE/share/man/man1/wkhtmltoimage.1.gz
-
-    CONFIG -= app_bundle
-}
+man.path=$$INSTALLBASE/share/man/man1
+man.extra=LD_LIBRARY_PATH=../../bin/ ../../bin/wkhtmltoimage --manpage | gzip > $(INSTALL_ROOT)$$INSTALLBASE/share/man/man1/wkhtmltoimage.1.gz
+QMAKE_EXTRA_TARGETS += man
+INSTALLS += man
 
 INSTALLS += target
 target.path=$$INSTALLBASE/bin

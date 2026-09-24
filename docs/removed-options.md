@@ -15,7 +15,7 @@ are rejected as unknown arguments; they are not retained as compatibility aliase
 | `--readme`, `--htmldoc` | Use the checked-in documentation, `--help`, `--extended-help`, or `--manpage`. |
 | `--lowquality`, `-l` | Printer initialization uses `QPrinter::HighResolution`. Control output explicitly with `--dpi`, `--image-dpi`, and `--image-quality`. |
 | `--enable-plugins`, `--disable-plugins` | Browser plugins and Java are always disabled. JavaScript remains configurable. |
-| `--use-xserver` | The CLI uses the existing default graphics mode: headless with patched Qt; Qt 5 Unix builds default to the offscreen platform. |
+| `--use-xserver` | The CLI uses the existing default graphics mode: headless with patched Qt; Qt 5 Linux builds default to the offscreen platform. |
 | `--copies`, `--collate`, `--no-collate` | Each document is rendered once. |
 | `--no-pdf-compression` | PDF object compression is always enabled. |
 | `--enable-forms`, `--disable-forms` | HTML form controls render as static page content, without interactive PDF fields. |

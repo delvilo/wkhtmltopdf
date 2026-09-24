@@ -19,13 +19,10 @@
 // along with wkhtmltopdf.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#ifdef _MSC_VER
-#define strcasecmp _stricmp
-#endif
-
 #include "loadsettings.hh"
 #include <QMap>
 #include <stdexcept>
+#include <strings.h>
 namespace wkhtmltopdf {
 namespace settings {
 

@@ -7,6 +7,9 @@ entirely "headless" and do not require a display or display service.
 
 See https://wkhtmltopdf.org for updated documentation.
 
+This fork targets Linux only. Its qmake builds and CI no longer include Windows,
+macOS, or other Unix platforms. The Qt 4 and Qt 5 Linux code paths remain.
+
 This fork has a reduced option set. See [removed options and migration](docs/removed-options.md)
 before reusing commands or library settings from upstream.
 

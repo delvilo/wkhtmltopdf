@@ -33,7 +33,7 @@ class ImageEntrySmoke(unittest.TestCase):
         self.source.write_bytes(HTML)
 
     def executable(self, name):
-        return str(BIN_DIR / (name + ('.exe' if os.name == 'nt' else '')))
+        return str(BIN_DIR / name)
 
     def run_image(self, *options, target='-', source=None, env=None, **kwargs):
         source = self.source if source is None else source
@@ -140,8 +140,7 @@ class ImageEntrySmoke(unittest.TestCase):
         self.assert_ok(self.run_image(target=target))
         self.png_size(target.read_bytes())
         self.assertEqual(set(self.work.iterdir()), before)
-        if os.name != 'nt':
-            self.assertEqual(target.stat().st_mode & 0o777, 0o640)
+        self.assertEqual(target.stat().st_mode & 0o777, 0o640)
         target = self.work / 'vector.svg'
         self.assert_ok(self.run_image(target=target))
         self.assertEqual(ET.fromstring(target.read_bytes()).tag, '{http://www.w3.org/2000/svg}svg')
@@ -158,7 +157,6 @@ class ImageEntrySmoke(unittest.TestCase):
                 self.assertIn(b'Could not open image output', result.stderr)
         self.assertEqual(marker.read_bytes(), ORIGINAL)
 
-    @unittest.skipUnless(os.name == 'posix', 'Requires POSIX file-size limits')
     def test_write_failure_preserves_file_and_removes_temporary_output(self):
         import resource
 
@@ -184,7 +182,6 @@ class ImageEntrySmoke(unittest.TestCase):
                     result = self.run_image('--format', fmt, stdout=sink)
                 self.assert_failed(result)
 
-    @unittest.skipUnless(os.name == 'posix', 'Requires POSIX symbolic links')
     def test_existing_symlink_is_preserved(self):
         target = self.work / 'target.png'
         target.write_bytes(ORIGINAL)
@@ -195,9 +192,8 @@ class ImageEntrySmoke(unittest.TestCase):
         self.png_size(target.read_bytes())
 
     def test_c_api_finishes_once_for_success_and_failure(self):
-        path = next((BIN_DIR / n for n in ['libwkhtmltox.so', 'libwkhtmltox.dylib', 'wkhtmltox.dll']
-                     if (BIN_DIR / n).exists()), None)
-        self.assertIsNotNone(path)
+        path = BIN_DIR / 'libwkhtmltox.so'
+        self.assertTrue(path.exists())
         lib = ctypes.CDLL(str(path))
         ptr, text = ctypes.c_void_p, ctypes.c_char_p
         callback_type = ctypes.CFUNCTYPE(None, ptr, ctypes.c_int)
