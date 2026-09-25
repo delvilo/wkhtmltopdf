@@ -4,8 +4,8 @@
 
 namespace wkhtmltopdf {
 
-ResourceLoader * createResourceLoader(settings::LoadGlobal & settings, int dpi, bool mainLoader) {
-	return new MultiPageLoader(settings, dpi, mainLoader);
+ResourceLoader * createResourceLoader(settings::LoadGlobal & settings) {
+	return new MultiPageLoader(settings);
 }
 
 }

@@ -30,10 +30,6 @@ class CliApplication: public QApplication {
 public:
 	static void prepareEnvironment();
 	CliApplication(int & argc, char ** argv);
-private:
-#if QT_VERSION < 0x050000
-	static bool useGraphics();
-#endif
 };
 
 }

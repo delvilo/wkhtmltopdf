@@ -1,17 +1,19 @@
 // Copyright 2026 wkhtmltopdf contributors. LGPL-3.0-or-later.
 #include "webkitpage.hh"
 #include "resourceloader.hh"
+#include <QPaintEngine>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPrinter>
-#include <QScopedPointer>
 #include <QWebElement>
 #include <QWebFrame>
 #include <QWebPage>
 #include <QWebSettings>
 
+#include "dllbegin.inc"
 namespace wkhtmltopdf {
 
-class WebKitElement: public DomElement::Data {
+class DLL_LOCAL WebKitElement: public DomElement::Data {
 public:
 	explicit WebKitElement(const QWebElement & value): element(value) {}
 	bool isNull() const { return element.isNull(); }
@@ -57,74 +59,95 @@ public:
 	void render(QPainter * painter) { page.mainFrame()->render(painter); }
 };
 
-class WebKitPagePrinter: public PagePrinter {
+// WebKit emits URL annotations only when the paint engine reports Pdf. Forward
+// ordinary painting through a custom engine so the DOM, CSS and print layout
+// stay intact while no PDF links are emitted. Only public Qt5 APIs are used.
+class DLL_LOCAL DocumentPaintEngine: public QPaintEngine {
 public:
-	WebKitPagePrinter(QWebPage & page, QPrinter * printer, QPainter * painter):
-		page(page), printer(printer)
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-		, pagination(painter ? new QWebPrinter(page.mainFrame(), printer, *painter) : 0)
-#endif
-	{
-		Q_UNUSED(painter);
+	explicit DocumentPaintEngine(QPrinter & target): QPaintEngine(AllFeatures), target(target) {}
+	Type type() const { return User; }
+	bool begin(QPaintDevice *) { return output.begin(&target); }
+	bool end() { return output.end(); }
+	void updateState(const QPaintEngineState & state) {
+		const DirtyFlags dirty = state.state();
+		if (dirty & DirtyTransform) output.setWorldTransform(state.transform());
+		if (dirty & DirtyPen) output.setPen(state.pen());
+		if (dirty & DirtyBrush) output.setBrush(state.brush());
+		if (dirty & DirtyBrushOrigin) output.setBrushOrigin(state.brushOrigin());
+		if (dirty & DirtyFont) output.setFont(state.font());
+		if (dirty & DirtyBackground) output.setBackground(state.backgroundBrush());
+		if (dirty & DirtyBackgroundMode) output.setBackgroundMode(state.backgroundMode());
+		if (dirty & DirtyHints) {
+			output.setRenderHints(output.renderHints(), false);
+			output.setRenderHints(state.renderHints());
+		}
+		if (dirty & DirtyCompositionMode) output.setCompositionMode(state.compositionMode());
+		if (dirty & DirtyOpacity) output.setOpacity(state.opacity());
+		if (dirty & DirtyClipEnabled) output.setClipping(state.isClipEnabled());
+		if (dirty & DirtyClipRegion) output.setClipRegion(state.clipRegion(), state.clipOperation());
+		if (dirty & DirtyClipPath) output.setClipPath(state.clipPath(), state.clipOperation());
 	}
-	void printDocument() { page.mainFrame()->print(printer); }
-	bool supportsPagination() const {
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-		return !pagination.isNull();
-#else
-		return false;
-#endif
+	void drawRects(const QRectF * rects, int count) { output.drawRects(rects, count); }
+	void drawRects(const QRect * rects, int count) { output.drawRects(rects, count); }
+	void drawLines(const QLineF * lines, int count) { output.drawLines(lines, count); }
+	void drawLines(const QLine * lines, int count) { output.drawLines(lines, count); }
+	void drawEllipse(const QRectF & rect) { output.drawEllipse(rect); }
+	void drawEllipse(const QRect & rect) { output.drawEllipse(rect); }
+	void drawPath(const QPainterPath & path) { output.drawPath(path); }
+	void drawPoints(const QPointF * points, int count) { output.drawPoints(points, count); }
+	void drawPoints(const QPoint * points, int count) { output.drawPoints(points, count); }
+	void drawPolygon(const QPointF * points, int count, PolygonDrawMode mode) { polygon(points, count, mode); }
+	void drawPolygon(const QPoint * points, int count, PolygonDrawMode mode) { polygon(points, count, mode); }
+	void drawPixmap(const QRectF & rect, const QPixmap & pixmap, const QRectF & source) { output.drawPixmap(rect, pixmap, source); }
+	void drawImage(const QRectF & rect, const QImage & image, const QRectF & source, Qt::ImageConversionFlags flags) {
+		output.drawImage(rect, image, source, flags);
 	}
-	int pageCount() const {
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-		return pagination ? pagination->pageCount() : 0;
-#else
-		return 0;
-#endif
+	void drawTextItem(const QPointF & point, const QTextItem & text) { output.drawTextItem(point, text); }
+	void drawTiledPixmap(const QRectF & rect, const QPixmap & pixmap, const QPointF & source) { output.drawTiledPixmap(rect, pixmap, source); }
+private:
+	template<typename Point> void polygon(const Point * points, int count, PolygonDrawMode mode) {
+		if (mode == PolylineMode) output.drawPolyline(points, count);
+		else if (mode == ConvexMode) output.drawConvexPolygon(points, count);
+		else output.drawPolygon(points, count, mode == WindingMode ? Qt::WindingFill : Qt::OddEvenFill);
 	}
-	QPair<int, QRectF> elementLocation(const DomElement & element) const {
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-		const WebKitElement * value = dynamic_cast<const WebKitElement *>(elementData(element));
-		if (pagination && value) return pagination->elementLocation(value->element);
-#else
-		Q_UNUSED(element);
-#endif
-		return qMakePair(-1, QRectF());
+	QPrinter & target;
+	QPainter output;
+};
+
+class DLL_LOCAL DocumentPrinter: public QPrinter {
+public:
+	DocumentPrinter(QPrinter & target, QPaintEngine & painting): QPrinter(HighResolution) {
+		// QPrinter borrows both engines. Paper settings and newPage() are supplied
+		// by the real printer; painting is forwarded by DocumentPaintEngine.
+		setEngines(target.printEngine(), &painting);
 	}
-	void spoolPage(int pageNumber) {
-		Q_ASSERT(supportsPagination());
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-		if (pagination) pagination->spoolPage(pageNumber);
-#else
-		Q_UNUSED(pageNumber);
-#endif
+};
+
+class DLL_LOCAL WebKitPagePrinter: public PagePrinter {
+public:
+	WebKitPagePrinter(QWebPage & page, QPrinter * printer): page(page), printer(printer) {}
+	void printDocument() {
+		DocumentPaintEngine painting(*printer);
+		DocumentPrinter document(*printer, painting);
+		page.mainFrame()->print(&document);
 	}
 private:
 	QWebPage & page;
 	QPrinter * printer;
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	QScopedPointer<QWebPrinter> pagination;
-#endif
 };
 
 WebKitPage::WebKitPage(QWebPage & page): d(new Private(page)) {}
 WebKitPage::~WebKitPage() { delete d; }
 DomDocument & WebKitPage::dom() { return *d; }
 ImageRenderer & WebKitPage::image() { return *d; }
-PagePrinter * WebKitPage::createPrinter(QPrinter * printer, QPainter * painter) {
-	return new WebKitPagePrinter(d->page, printer, painter);
+PagePrinter * WebKitPage::createPrinter(QPrinter * printer) {
+	return new WebKitPagePrinter(d->page, printer);
 }
 
 void WebKitPage::applySettings(const settings::Web & s) {
 	QWebSettings * ws = d->page.settings();
 	if (!s.defaultEncoding.isEmpty())
 		ws->setDefaultTextEncoding(s.defaultEncoding);
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	if (!s.enableIntelligentShrinking) {
-		ws->setPrintingMaximumShrinkFactor(1.0);
-		ws->setPrintingMinimumShrinkFactor(1.0);
-	}
-#endif
 	ws->setAttribute(QWebSettings::JavaEnabled, false);
 	ws->setAttribute(QWebSettings::JavascriptEnabled, s.enableJavascript);
 	ws->setAttribute(QWebSettings::JavascriptCanOpenWindows, false);

@@ -23,7 +23,7 @@
 #include <QFile>
 
 /*!
-  Output the name and version of the program, and also whether we are using a patched qt
+  Output the name and version of the program
   \param o The outputter to output to
 */
 void CommandLineParserBase::outputName(Outputter * o) const {
@@ -40,19 +40,6 @@ void CommandLineParserBase::outputLicense(Outputter * o) const {
 	o->beginSection("License");
 	o->paragraph("Copyright (c) 2010-2020 wkhtmltopdf authors");
 	QFile file(":/LICENSE");
-	file.open(QIODevice::ReadOnly | QIODevice::Text);
-	QTextStream stream(&file);
-	o->verbatim(stream.readAll());
-	o->endSection();
-}
-
-/*!
-  Output list of authors
-  \param o The outputter to output to
-*/
-void CommandLineParserBase::outputAuthors(Outputter * o) const {
-	o->beginSection("Authors");
-	QFile file(":/AUTHORS");
 	file.open(QIODevice::ReadOnly | QIODevice::Text);
 	QTextStream stream(&file);
 	o->verbatim(stream.readAll());

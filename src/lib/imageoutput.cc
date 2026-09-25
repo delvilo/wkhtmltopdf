@@ -21,10 +21,6 @@
 #include "imageoutput.hh"
 #include <QFileInfo>
 #include <cstdio>
-#if QT_VERSION < 0x050100
-#include <cerrno>
-#include <cstring>
-#endif
 
 namespace wkhtmltopdf {
 
@@ -50,7 +46,6 @@ bool ImageOutput::open() {
 		error = "Image output must be a regular file or stdout";
 		return false;
 	}
-#if QT_VERSION >= 0x050100
 	file.setFileName(path);
 	// Never fall back to truncating the destination when a temporary file fails.
 	file.setDirectWriteFallback(false);
@@ -58,28 +53,6 @@ bool ImageOutput::open() {
 		error = file.errorString();
 		return false;
 	}
-#else
-	// Qt 4 has no QSaveFile. Resolve existing links before replacing the target.
-	targetPath = target.isSymLink() ? target.canonicalFilePath() : target.absoluteFilePath();
-	if (targetPath.isEmpty()) {
-		error = "Could not resolve the output symbolic link";
-		return false;
-	}
-	if (target.exists() && !target.isWritable()) {
-		error = "The output file is not writable";
-		return false;
-	}
-	const QFileInfo resolved(targetPath);
-	file.setFileTemplate(resolved.absolutePath() + "/." + resolved.fileName() + ".XXXXXX");
-	if (!file.open()) {
-		error = file.errorString();
-		return false;
-	}
-	if (target.exists() && !file.setPermissions(target.permissions())) {
-		error = file.errorString();
-		return false;
-	}
-#endif
 	destination = &file;
 	return true;
 }
@@ -98,27 +71,8 @@ bool ImageOutput::commit() {
 		error = standardOutput.errorString();
 		return false;
 	}
-#if QT_VERSION >= 0x050100
 	if (file.commit()) return true;
 	error = file.errorString();
-#else
-	if (!file.flush() || file.error() != QFile::NoError) {
-		error = file.errorString();
-		return false;
-	}
-	file.close();
-	if (file.error() != QFile::NoError) {
-		error = file.errorString();
-		return false;
-	}
-	if (::rename(QFile::encodeName(file.fileName()).constData(),
-				 QFile::encodeName(targetPath).constData()) != 0) {
-		error = QString::fromLocal8Bit(std::strerror(errno));
-		return false;
-	}
-	file.setAutoRemove(false);
-	return true;
-#endif
 	return false;
 }
 

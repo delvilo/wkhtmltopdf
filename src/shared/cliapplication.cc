@@ -20,7 +20,6 @@
 
 #include "cliapplication.hh"
 #include <utilities.hh>
-#include <webkitfeatures.hh>
 
 #include <locale.h>
 #include <stdlib.h>
@@ -29,29 +28,12 @@ namespace wkhtmltopdf {
 
 void CliApplication::prepareEnvironment() {
 	setlocale(LC_ALL, "");
-#if QT_VERSION >= 0x050000 && !defined(__EXTENSIVE_WKHTMLTOPDF_QT_HACK__)
 	// Respect an explicit platform selected by the caller.
 	setenv("QT_QPA_PLATFORM", "offscreen", 0);
-#endif
 }
-
-#if QT_VERSION < 0x050000
-bool CliApplication::useGraphics() {
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	QApplication::setGraphicsSystem("raster");
-	return false;
-#else
-	return true;
-#endif
-}
-#endif
 
 CliApplication::CliApplication(int & argc, char ** argv):
-#if QT_VERSION < 0x050000
-	QApplication(argc, argv, useGraphics())
-#else
 	QApplication(argc, argv)
-#endif
 {
 	// QApplication takes ownership of the style.
 	setStyle(new MyLooksStyle());

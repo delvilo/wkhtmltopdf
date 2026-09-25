@@ -23,7 +23,6 @@
 #include "imagesettings.hh"
 #include "imageoutput.hh"
 #include "renderbackend.hh"
-#include "webkitfeatures.hh"
 #include <climits>
 #include <QBuffer>
 #include <QDebug>
@@ -40,7 +39,7 @@ namespace wkhtmltopdf {
 
 ImageConverterPrivate::ImageConverterPrivate(ImageConverter & o, wkhtmltopdf::settings::ImageGlobal & s, const QString * data):
 	settings(s),
-	loader(createResourceLoader(s.loadGlobal, 96, true)),
+	loader(createResourceLoader(s.loadGlobal)),
 	out(o), loaderObject(0) {
 	if (data) inputData = *data;
 
@@ -184,15 +183,12 @@ bool ImageConverterPrivate::renderImage(QString & message) {
 			generator.setOutputDevice(&svgBuffer);
 			generator.setSize(rect.size());
 			generator.setViewBox(QRect(QPoint(0, 0), rect.size()));
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-			generator.setViewBoxClip(true);
-#endif
 			if (!painter.begin(&generator)) {
 				message = "Could not initialize SVG rendering";
 				return false;
 			}
 		} else {
-			// Qt 4 stores the ARGB32 image byte count in an int.
+			// Bound raster allocation to a signed int byte count.
 			if (qint64(rect.width()) * rect.height() > INT_MAX / 4) {
 				message = "Image dimensions exceed the raster allocation limit";
 				return false;

@@ -20,7 +20,6 @@
 
 #include "imagecommandlineparser.hh"
 #include "outputter.hh"
-#include <webkitfeatures.hh>
 
 /*!
   \file commandlineparser.hh
@@ -38,7 +37,6 @@ void ImageCommandLineParser::manpage(FILE * fd) const {
  	outputDescripton(o);
 	outputSwitches(o, true);
  	outputContact(o);
-	outputAuthors(o);
 	delete o;
 }
 
@@ -97,7 +95,7 @@ void ImageCommandLineParser::parseArguments(int argc, const char * const * argv)
         } else if (i==argc-1 && (argv[i][0] != '-' || argv[i][1] == '\0')) { // the last arg (out)
             settings.out = QString::fromLocal8Bit(argv[i]);
 		} else {
-			parseArg(global, argc, argv, defaultMode, i, 0);
+			parseArg(global, argc, argv, defaultMode, i);
 		}
 	}
 

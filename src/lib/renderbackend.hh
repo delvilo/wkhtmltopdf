@@ -10,7 +10,7 @@
 namespace wkhtmltopdf {
 
 // Caller owns the returned loader. No Qt6/WebEngine implementation is selected.
-DLL_LOCAL ResourceLoader * createResourceLoader(settings::LoadGlobal & settings, int dpi, bool mainLoader = false);
+DLL_LOCAL ResourceLoader * createResourceLoader(settings::LoadGlobal & settings);
 
 }
 #include "dllend.inc"

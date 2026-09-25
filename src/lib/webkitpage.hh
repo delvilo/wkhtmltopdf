@@ -17,7 +17,7 @@ public:
 	DomDocument & dom();
 	ImageRenderer & image();
 	void applySettings(const settings::Web & settings);
-	PagePrinter * createPrinter(QPrinter * printer, QPainter * painter = 0);
+	PagePrinter * createPrinter(QPrinter * printer);
 private:
 	Q_DISABLE_COPY(WebKitPage)
 	class Private;

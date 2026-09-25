@@ -23,11 +23,7 @@
 
 #include <QBuffer>
 #include <QFile>
-#if QT_VERSION >= 0x050100
 #include <QSaveFile>
-#else
-#include <QTemporaryFile>
-#endif
 
 #include "dllbegin.inc"
 namespace wkhtmltopdf {
@@ -46,12 +42,7 @@ private:
 	QString error;
 	QBuffer buffer;
 	QFile standardOutput;
-#if QT_VERSION >= 0x050100
 	QSaveFile file;
-#else
-	QTemporaryFile file;
-	QString targetPath;
-#endif
 	QIODevice * destination;
 };
 

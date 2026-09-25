@@ -40,8 +40,6 @@ struct DLL_PUBLIC Web {
 	//! Should we enable Javascript
 	bool enableJavascript;
 
-	//! Should the horrible intelligent shrinking feature be enabled?
-	bool enableIntelligentShrinking;
 
 	//! Minimum font size
 	int minimumFontSize;

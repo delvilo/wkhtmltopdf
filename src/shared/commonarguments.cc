@@ -61,7 +61,7 @@ typedef SomeSetter<ProxyTM> ProxySetter;
 */
 template <bool v>
 struct HelpFunc {
-	bool operator()(const char * const *, CommandLineParserBase & p, char *) {
+	bool operator()(const char * const *, CommandLineParserBase & p) {
 		p.usage(stdout,v);
 		exit(0);
 	}
@@ -71,7 +71,7 @@ struct HelpFunc {
   Lambda: Call the man method
 */
 struct ManPageFunc {
-	bool operator()(const char * const *, CommandLineParserBase & p, char *) {
+	bool operator()(const char * const *, CommandLineParserBase & p) {
 		p.manpage(stdout);
 		exit(0);
 	}
@@ -81,7 +81,7 @@ struct ManPageFunc {
   Lambda: Call the version method
 */
 struct VersionFunc {
-	bool operator()(const char * const *, CommandLineParserBase & p, char *) {
+	bool operator()(const char * const *, CommandLineParserBase & p) {
 		p.version(stdout);
 		exit(0);
 	}
@@ -91,7 +91,7 @@ struct VersionFunc {
   Lambda: show the license
 */
 struct LicenseFunc {
-    bool operator()(const char * const *, CommandLineParserBase & p, char *) {
+    bool operator()(const char * const *, CommandLineParserBase & p) {
 		p.license(stdout);
 		exit(0);
 	}
@@ -108,27 +108,14 @@ void CommandLineParserBase::section(QString s, QString desc) {
 	sections.push_back(s);
 }
 
-/*!
-  Indicate whether the next arguments we add require a patched qt to work
-  /param h Do we require a patch
-*/
-void CommandLineParserBase::qthack(bool h) {
-	currentHack = h;
-}
 
 void CommandLineParserBase::mode(int m) {
 	currentMode = m;
 }
 
-/*!
-  Indicate whether the next arguments we add are "extended" and should not
-  be shown in a simple --help
-  \param e Are the arguments extended
-*/
 void CommandLineParserBase::extended(bool e) {
 	currentExtended = e;
 }
-
 
 /*!
   Add an argument to the list of arguments
@@ -143,7 +130,6 @@ void CommandLineParserBase::addarg(QString l, char s, QString d, ArgHandler * h,
 	h->longName = l;
 	h->shortSwitch = s;
 	h->display = display;
-	h->qthack = currentHack;
 	h->section = currentMode;
 	h->extended = currentExtended;
 	longToHandler[l] = h;
@@ -153,28 +139,24 @@ void CommandLineParserBase::addarg(QString l, char s, QString d, ArgHandler * h,
 
 void CommandLineParserBase::addDocArgs() {
 	extended(false);
-	qthack(false);
 	addarg("help", 'h', "Display help", new Caller<HelpFunc<false> >());
 	addarg("version", 'V' ,"Output version information and exit", new Caller<VersionFunc>());
 	addarg("license", 0 ,"Output license information and exit", new Caller<LicenseFunc>());
 	addarg("extended-help", 'H',"Display more extensive help, detailing less common command switches", new Caller<HelpFunc<true> >());
 
 	extended(true);
- 	qthack(false);
 	addarg("manpage", 0, "Output program man page", new Caller<ManPageFunc>());
 }
 
 
 void CommandLineParserBase::addGlobalLoadArgs(LoadGlobal & s) {
 	extended(true);
-	qthack(false);
 
     addarg("cookie-jar", 0, "Read and write cookies from and to the supplied cookie jar file", new QStrSetter(s.cookieJar, "path") );
 }
 
 void CommandLineParserBase::addWebArgs(Web & s) {
 	extended(true);
- 	qthack(false);
 
 	addarg("minimum-font-size",0,"Minimum font size", new IntSetter(s.minimumFontSize,"int"));
  	addarg("user-style-sheet",0,"Specify a user style sheet, to load with every page", new QStrSetter(s.userStyleSheet,"path"));
@@ -185,8 +167,6 @@ void CommandLineParserBase::addWebArgs(Web & s) {
 	addarg("enable-javascript",0,"Do allow web pages to run javascript", new ConstSetter<bool>(s.enableJavascript,true));
 
 	extended(true);
- 	qthack(true);
- 	qthack(false);
  	addarg("encoding", 0, "Set the default text encoding, for input", new QStrSetter(s.defaultEncoding,"encoding"));
 
 
@@ -194,7 +174,6 @@ void CommandLineParserBase::addWebArgs(Web & s) {
 
 void CommandLineParserBase::addPageLoadArgs(LoadPage & s) {
 	extended(true);
-	qthack(false);
 	addarg("proxy",'p',"Use a proxy", new ProxySetter(s.proxy, "proxy"));
 	addarg("proxy-hostname-lookup", 0, "Use the proxy for resolving hostnames", new ConstSetter<bool>(s.proxyHostNameLookup, true));
 	addarg("bypass-proxy-for", 0, "Bypass proxy for host (repeatable)", new StringListSetter(s.bypassProxyForHosts, "value"));
