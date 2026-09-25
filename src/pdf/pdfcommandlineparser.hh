@@ -28,25 +28,18 @@ class PdfCommandLineParser: public CommandLineParserBase {
 public:
 	const static int global = 1;
 	const static int page = 2;
-	const static int toc = 4;
 	wkhtmltopdf::settings::PdfGlobal & globalSettings;
-	QList<wkhtmltopdf::settings::PdfObject> & pageSettings;
-
-	wkhtmltopdf::settings::PdfObject od;
+	wkhtmltopdf::settings::PdfObject & pageSettings;
 
 	//Arguments.cc
 	PdfCommandLineParser(wkhtmltopdf::settings::PdfGlobal & globalSettings,
-					  QList<wkhtmltopdf::settings::PdfObject> & pageSettings);
+					  wkhtmltopdf::settings::PdfObject & pageSettings);
 
 	//docparts.cc
 	void outputManName(Outputter * o) const;
 	void outputSynopsis(Outputter * o) const;
 	void outputDescripton(Outputter * o) const;
 	void outputPageSizes(Outputter * o) const;
-	void outputHeaderFooterDoc(Outputter * o) const;
-	void outputTableOfContentDoc(Outputter * o) const;
-	void outputOutlineDoc(Outputter * o) const;
-	void outputNotPatched(Outputter * o) const;
 	void outputPageBreakDoc(Outputter * o) const;
 	void outputContact(Outputter * o) const;
 
@@ -56,12 +49,6 @@ public:
 	virtual void manpage(FILE * fd) const;
 
 	void parseArguments(int argc, const char * const * argv);
-
-	virtual char * mapAddress(char * d, char * ns) const {
-		const char * _od = reinterpret_cast<const char *>(&od);
-		if (_od > d || d >= _od + sizeof(wkhtmltopdf::settings::PdfObject)) return d;;
-		return d - _od + ns;
-	}
 
 };
 #endif //__PDFCOMMANDLINEPARSER_HH__

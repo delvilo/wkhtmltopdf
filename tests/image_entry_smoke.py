@@ -10,6 +10,7 @@ import struct
 import subprocess
 import tempfile
 import unittest
+import zlib
 import xml.etree.ElementTree as ET
 
 
@@ -74,6 +75,47 @@ class ImageEntrySmoke(unittest.TestCase):
         width, height = self.png_size(result.stdout)
         self.assertEqual(width, 400)
         self.assertGreater(height, 0)
+
+    def test_smart_width_and_transparency_on_standard_qt(self):
+        help_result = subprocess.run([self.executable('wkhtmltoimage'), '--extended-help'],
+                                     env=self.env, capture_output=True, timeout=10)
+        self.assert_ok(help_result)
+        for flag in [b'--enable-smart-width', b'--disable-smart-width', b'--transparent']:
+            self.assertIn(flag, help_result.stdout)
+        self.source.write_text('<html><body style="margin:0"><div style="width:640px;height:80px"></div></body></html>')
+        for flag, wide in [('--enable-smart-width', True), ('--disable-smart-width', False)]:
+            result = self.run_image('--format', 'png', '--width', '200', flag)
+            self.assert_ok(result)
+            self.assertNotIn(b'ignored', result.stderr)
+            width, _ = self.png_size(result.stdout)
+            if wide:
+                self.assertGreaterEqual(width, 640)
+            else:
+                self.assertEqual(width, 200)
+        result = self.run_image('--format', 'png', '--width', '100', '--height', '100',
+                                '--disable-smart-width', '--transparent')
+        self.assert_ok(result)
+        self.assertNotIn(b'ignored', result.stderr)
+        self.assertEqual(result.stdout[25], 6)  # RGBA PNG
+        self.assertEqual(result.stdout[28], 0)  # Non-interlaced
+        chunks, position = [], 8
+        while position < len(result.stdout):
+            size = struct.unpack('>I', result.stdout[position:position + 4])[0]
+            if result.stdout[position + 4:position + 8] == b'IDAT':
+                chunks.append(result.stdout[position + 8:position + 8 + size])
+            position += size + 12
+        # At the first pixel of the first row every PNG filter predicts zero.
+        first_row = zlib.decompress(b''.join(chunks))
+        self.assertEqual(first_row[4], 0)  # Transparent alpha, not just RGBA encoding.
+
+    def test_zoom_changes_image_layout(self):
+        self.source.write_text('<html><body style="margin:0"><div style="height:100px">Zoom</div></body></html>')
+        heights = []
+        for zoom in ['1', '2']:
+            result = self.run_image('--format', 'png', '--width', '400', '--zoom', zoom)
+            self.assert_ok(result)
+            heights.append(self.png_size(result.stdout)[1])
+        self.assertEqual(heights, [100, 200])
 
     def test_invalid_settings_fail_before_loading_or_overwriting(self):
         target = self.work / 'keep.png'

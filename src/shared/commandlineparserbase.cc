@@ -20,7 +20,6 @@
 
 #include "commandlineparserbase.hh"
 #include "outputter.hh"
-#include <webkitfeatures.hh>
 
 bool ahsort(const ArgHandler * a, const ArgHandler * b) {
 	QRegExp e("^(no|enable|disable|include-in|exclude-from)-");
@@ -47,9 +46,6 @@ void CommandLineParserBase::outputSwitches(Outputter * o, bool extended) const {
 	foreach (const QString & section, sections) {
 		QList<const ArgHandler *> display;
 		foreach (const ArgHandler * handler, sectionArgumentHandles[section]) {
-#ifndef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-			if (handler->qthack) continue;
-#endif
 			if (!extended && handler->extended) continue;
 			display.push_back(handler);
 		}
@@ -73,11 +69,7 @@ void CommandLineParserBase::outputSwitches(Outputter * o, bool extended) const {
 #define STRINGIZE(x) STRINGIZE_(x)
 
 const char *CommandLineParserBase::appVersion() const {
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	return STRINGIZE(FULL_VERSION) " (with patched qt)";
-#else
 	return STRINGIZE(FULL_VERSION);
-#endif
 }
 
 /*!
@@ -95,12 +87,11 @@ void CommandLineParserBase::version(FILE * fd) const {
 void CommandLineParserBase::license(FILE * fd) const {
 	Outputter * o = Outputter::text(fd);
   	outputName(o);
-  	outputAuthors(o);
   	outputLicense(o);
 	delete o;
 }
 
-void CommandLineParserBase::parseArg(int sections, const int argc, const char * const * argv, bool & defaultMode, int & arg, char * page) {
+void CommandLineParserBase::parseArg(int sections, const int argc, const char * const * argv, bool & defaultMode, int & arg) {
 	if (argv[arg][1] == '-') { //We have a long style argument
 		//After an -- apperas in the argument list all that follows is interpreted as default arguments
 		if (argv[arg][2] == '0') {
@@ -125,15 +116,11 @@ void CommandLineParserBase::parseArg(int sections, const int argc, const char * 
 			usage(stderr, false);
 			exit(1);
 		}
-		if (!(*(j.value()))(argv+arg+1, *this, page)) {
+		if (!(*(j.value()))(argv+arg+1, *this)) {
 			fprintf(stderr, "Invalid argument(s) parsed to %s\n\n", argv[arg]);
 			usage(stderr, false);
 			exit(1);
 		}
-#ifndef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-		if (j.value()->qthack)
-			fprintf(stderr, "The switch %s is not supported when using unpatched qt and will be ignored.", argv[arg]);
-#endif
 		//Skip already handled switch arguments
 		arg += j.value()->argn.size();
 	} else {
@@ -158,15 +145,11 @@ void CommandLineParserBase::parseArg(int sections, const int argc, const char * 
 				usage(stderr, false);
 				exit(1);
 			}
-			if (!(*(k.value()))(argv+arg+1, *this, page)) {
+			if (!(*(k.value()))(argv+arg+1, *this)) {
 				fprintf(stderr, "Invalid argument(s) parsed to -%c\n\n", argv[c][j]);
 				usage(stderr, false);
 				exit(1);
 			}
-#ifndef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
- 			if (k.value()->qthack)
-				fprintf(stderr, "The switch -%c is not supported when using unpatched qt and will be ignored.", argv[c][j]);
-#endif
 			//Skip already handled switch arguments
 			arg += k.value()->argn.size();
 		}

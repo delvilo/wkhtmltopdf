@@ -17,23 +17,17 @@
 
 !linux: error("Linux is the only supported platform")
 
-CONFIG(static, shared|static):lessThan(QT_MAJOR_VERSION, 5) {
-    DEFINES  += QT4_STATICPLUGIN_TEXTCODECS
-    QTPLUGIN += qcncodecs qjpcodecs qkrcodecs qtwcodecs
-}
+!equals(QT_MAJOR_VERSION, 5): error("Qt5 with WebKit is required")
+lessThan(QT_MINOR_VERSION, 3): error("Qt 5.3 or newer is required")
 
 INCLUDEPATH += ../../src/lib
 RESOURCES    = $$PWD/wkhtmltopdf.qrc
 
-QT += webkit network xmlpatterns svg
-greaterThan(QT_MAJOR_VERSION, 4) {
-    QT += webkitwidgets
-    greaterThan(QT_MINOR_VERSION, 2): QT += printsupport
-}
+QT += webkit webkitwidgets network svg printsupport
 
 # version related information
 VERSION_TEXT=$$(WKHTMLTOX_VERSION)
-isEmpty(VERSION_TEXT): VERSION_TEXT=$$cat($$PWD/VERSION)
+isEmpty(VERSION_TEXT): VERSION_TEXT=0.12.7
 VERSION_LIST=$$split(VERSION_TEXT, "-")
 
 count(VERSION_LIST, 1): VERSION=$$VERSION_TEXT

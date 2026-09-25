@@ -1,25 +1,51 @@
-wkhtmltopdf and wkhtmltoimage
------------------------------
+# wkhtmltopdf and wkhtmltoimage
 
-wkhtmltopdf and wkhtmltoimage are command line tools to render HTML into PDF
-and various image formats using the QT Webkit rendering engine. These run
-entirely "headless" and do not require a display or display service.
+Linux command-line tools and a C library for converting one HTML document to
+PDF or an image using **standard Qt5/WebKit**. Qt5's offscreen platform is used
+by default, so a display server is not required. An explicit `QT_QPA_PLATFORM`
+is respected.
 
-See https://wkhtmltopdf.org for updated documentation.
+## Supported scope
 
-This fork targets Linux only. Its qmake builds and CI no longer include Windows,
-macOS, or other Unix platforms. The Qt 4 and Qt 5 Linux code paths remain.
+- One HTML input per conversion, from a URL, local file, stdin or C API memory.
+- PDF output with automatic pagination, paper size, margins, orientation,
+  grayscale, print resolution and document title.
+- Image output with smart/fixed width, automatic/fixed height, crop, quality,
+  transparency, layout zoom and standard SVG serialization.
+- Network loading, cookies, proxies, authentication, POST, stylesheets and
+  JavaScript readiness controls.
 
-This fork has a reduced option set. See [removed options and migration](docs/removed-options.md)
-before reusing commands or library settings from upstream.
+Qt4, patched Qt and their build/submodule paths are removed. Multiple HTML
+inputs, covers, document merging, page numbering, headers/footers, automatic
+TOCs, PDF bookmarks, clickable PDF links and the SVG view-box clipping extension
+are removed. Qt6/WebEngine is not selected. See
+[removed options and migration](docs/removed-options.md) before reusing upstream
+commands or library settings.
 
-See [image entry refactoring](docs/image-entry-refactoring.md) for image validation,
-file replacement behavior, and regression checks.
+## Building on Linux
 
-See [WebKit rendering interfaces](docs/rendering-interfaces.md) for the resource
-loading, DOM, page printing and image rendering boundaries and their tests.
+Qt5 5.3 or newer with WebKit, WebKitWidgets, SVG and PrintSupport is required.
+The tested baseline and CI use Qt5 5.15. XML Patterns is no longer required.
+For example, on Ubuntu 24.04:
 
-## Building
-wkhtmltopdf has its own dedicated repository for building and packaging.
+```sh
+sudo apt-get update
+sudo apt-get install build-essential qt5-qmake qtbase5-dev libqt5webkit5-dev libqt5svg5-dev
+qmake CONFIG+=shared
+make -j2
+export LD_LIBRARY_PATH="$PWD/bin${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+bin/wkhtmltopdf input.html output.pdf
+bin/wkhtmltoimage --format png --transparent input.html output.png
+```
 
-See https://github.com/wkhtmltopdf/packaging
+Use the source build above for this fork. Upstream prebuilt packages use a
+different feature set. The upstream website snapshots under `docs/` are retained
+as historical references; this README, the migration guide and freshly generated
+`--extended-help` describe the current fork.
+
+## Architecture and checks
+
+- [Rendering interfaces](docs/rendering-interfaces.md): network loading, DOM,
+  whole-document printing and image painting boundaries, plus regression commands.
+- [Image conversion](docs/image-entry-refactoring.md): validation, transactional
+  file output and regression coverage.

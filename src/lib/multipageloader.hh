@@ -32,7 +32,7 @@ class DLL_LOCAL MultiPageLoaderPrivate;
 class DLL_LOCAL MultiPageLoader: public ResourceLoader {
 	Q_OBJECT
 public:
-	MultiPageLoader(settings::LoadGlobal & s, int dpi, bool mainLoader = false);
+	MultiPageLoader(settings::LoadGlobal & s);
 	~MultiPageLoader();
 	LoaderObject * addResource(const QString & url, const settings::LoadPage & settings, const QString * data=NULL);
 	LoaderObject * addResource(const QUrl & url, const settings::LoadPage & settings);

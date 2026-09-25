@@ -32,7 +32,7 @@ int main(int argc, char * argv[]) {
 	wkhtmltopdf::CliApplication::prepareEnvironment();
 	//This will store all our settings
 	PdfGlobal globalSettings;
-	QList<PdfObject> objectSettings;
+	PdfObject objectSettings;
 	//Create a command line parser to parse commandline arguments
 	PdfCommandLineParser parser(globalSettings, objectSettings);
 
@@ -49,8 +49,7 @@ int main(int argc, char * argv[]) {
 	PdfConverter converter(globalSettings);
 
 	ProgressFeedback feedback(globalSettings.logLevel, converter);
-	foreach (const PdfObject & object, objectSettings)
-		converter.addResource(object);
+	converter.addResource(objectSettings);
 
 	bool success = converter.convert();
 	return handleError(success, converter.httpErrorCode());

@@ -27,14 +27,12 @@
 #include <QUuid>
 #include <QList>
 #include <QByteArray>
-#if (QT_VERSION >= 0x050000 && !defined QT_NO_SSL) || !defined QT_NO_OPENSSL
+#ifndef QT_NO_SSL
 #include <QSslCertificate>
 #include <QSslKey>
 #include <QSslConfiguration>
 #endif
-#if QT_VERSION >= 0x050000
 #include <QUrlQuery>
-#endif
 
 namespace wkhtmltopdf {
 /*!
@@ -109,7 +107,7 @@ QNetworkReply * MyNetworkAccessManager::createRequest(Operation op, const QNetwo
 			r3.setRawHeader(j.first.toLatin1(), j.second.toLatin1());
 	}
 
-	#if (QT_VERSION >= 0x050000 && !defined QT_NO_SSL) || !defined QT_NO_OPENSSL
+	#ifndef QT_NO_SSL
 	if(!settings.clientSslKeyPath.isEmpty() && !settings.clientSslKeyPassword.isEmpty()
 			&& !settings.clientSslCrtPath.isEmpty()){
 		QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
@@ -183,10 +181,6 @@ bool MyQWebPage::shouldInterruptJavaScript() {
 	return false;
 }
 
-QString MyQWebPage::overrideMediaType() const
-{
-    return resource.settings.printMediaType ? "print" : "screen";
-}
 
 ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, const settings::LoadPage & s):
 	networkAccessManager(s),
@@ -261,11 +255,7 @@ ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, con
 	}
 
 	webPage.setNetworkAccessManager(&networkAccessManager);
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	double devicePixelRatio = multiPageLoader.dpi / 96.; // The used version of WebKit always renders at 96 DPI when no zoom is applied. It does not fully support a device pixel ratio != 1 natively.
-	webPage.mainFrame()->setZoomFactor(devicePixelRatio * settings.zoomFactor); // Zoom in the page to achieve a higher DPI.
-	webPage.setDevicePixelRatio(devicePixelRatio); // Fix CSS media queries (does not affect anything else).
-#endif
+	webPage.mainFrame()->setZoomFactor(settings.zoomFactor);
 }
 
 /*!
@@ -324,17 +314,14 @@ void ResourceObject::loadFinished(bool ok) {
 			warning(QString("Failed loading page ") + url.toString() + " (ignored)");
 	}
 
-	bool isMain = multiPageLoader.isMainLoader;
-
-	// Evaluate extra user supplied javascript for the main loader
-	if (isMain)
-		foreach (const QString & str, settings.runScript)
-			webPage.mainFrame()->evaluateJavaScript(str);
+	// Evaluate user scripts for the conversion input.
+	foreach (const QString & str, settings.runScript)
+		webPage.mainFrame()->evaluateJavaScript(str);
 
 	// XXX: If loading failed there's no need to wait
 	//      for javascript on this resource.
 	if (!ok || signalPrint || settings.jsdelay == 0) loadDone();
-	else if (isMain && !settings.windowStatus.isEmpty()) waitWindowStatus();
+	else if (!settings.windowStatus.isEmpty()) waitWindowStatus();
 	else QTimer::singleShot(settings.jsdelay, this, SLOT(loadDone()));
 }
 
@@ -510,17 +497,10 @@ void ResourceObject::load() {
 			postData.append("--\n");
 		}
 	} else {
-#if QT_VERSION >= 0x050000
 		QUrlQuery q;
 		foreach (const settings::PostItem & pi, settings.post)
 			q.addQueryItem(pi.name, pi.value);
 		postData = q.query(QUrl::FullyEncoded).toLocal8Bit();
-#else
-		QUrl u;
-		foreach (const settings::PostItem & pi, settings.post)
-			u.addQueryItem(pi.name, pi.value);
-		postData = u.encodedQuery();
-#endif
 	}
 
 
@@ -584,8 +564,8 @@ void MultiPageLoaderPrivate::loadDone() {
 
 
 
-MultiPageLoaderPrivate::MultiPageLoaderPrivate(const settings::LoadGlobal & s, int dpi_, MultiPageLoader & o):
-	outer(o), settings(s), dpi(dpi_) {
+MultiPageLoaderPrivate::MultiPageLoaderPrivate(const settings::LoadGlobal & s, MultiPageLoader & o):
+	outer(o), settings(s) {
 
 	cookieJar = new MyCookieJar();
 
@@ -647,9 +627,8 @@ void MultiPageLoaderPrivate::fail() {
   \brief Construct a multipage loader object, load settings read from the supplied settings
   \param s The settings to be used while loading pages
 */
-MultiPageLoader::MultiPageLoader(settings::LoadGlobal & s, int dpi, bool mainLoader):
-	d(new MultiPageLoaderPrivate(s, dpi, *this)) {
-	d->isMainLoader = mainLoader;
+MultiPageLoader::MultiPageLoader(settings::LoadGlobal & s):
+	d(new MultiPageLoaderPrivate(s, *this)) {
 }
 
 MultiPageLoader::~MultiPageLoader() {

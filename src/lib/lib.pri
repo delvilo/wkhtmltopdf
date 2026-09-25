@@ -18,7 +18,7 @@
 DEFINES += BUILDING_DLL
 
 #Shared
-HEADERS += ../lib/rendering.hh ../lib/resourceloader.hh ../lib/renderbackend.hh ../lib/webkitpage.hh ../lib/webkitfeatures.hh
+HEADERS += ../lib/rendering.hh ../lib/resourceloader.hh ../lib/renderbackend.hh ../lib/webkitpage.hh
 SOURCES += ../lib/resourceloader.cc ../lib/renderbackend.cc ../lib/webkitpage.cc
 PUBLIC_HEADERS += ../lib/converter.hh ../lib/multipageloader.hh ../lib/dllbegin.inc
 PUBLIC_HEADERS += ../lib/dllend.inc ../lib/loadsettings.hh ../lib/websettings.hh
@@ -31,8 +31,7 @@ SOURCES += ../lib/loadsettings.cc ../lib/logging.cc ../lib/multipageloader.cc \
 #Pdf
 PUBLIC_HEADERS += ../lib/pdfconverter.hh ../lib/pdfsettings.hh
 HEADERS += ../lib/pdfconverter_p.hh
-SOURCES += ../lib/pdfsettings.cc ../lib/pdfconverter.cc \
-           ../lib/outline.cc ../lib/tocstylesheet.cc
+SOURCES += ../lib/pdfsettings.cc ../lib/pdfconverter.cc
 
 PUBLIC_HEADERS += ../lib/imageconverter.hh ../lib/imagesettings.hh
 HEADERS += ../lib/imageconverter_p.hh ../lib/imageoutput.hh

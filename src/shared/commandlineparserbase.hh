@@ -33,11 +33,10 @@ public:
 	QVector<QString> argn;
 	bool display;
 	bool extended;
-	bool qthack;
 	virtual QString getDesc() const;
 	virtual ~ArgHandler();
 	int section;
-	virtual bool operator() (const char * const * args, CommandLineParserBase & parser, char * page) = 0;
+	virtual bool operator() (const char * const * args, CommandLineParserBase & parser) = 0;
 };
 
 class CommandLineParserBase {
@@ -45,7 +44,6 @@ public:
 	int currentMode;
 	QString currentSection;
 	bool currentExtended;
-	bool currentHack;
 
 	QList<QString> sections;
 	QHash<QString, ArgHandler *> longToHandler;
@@ -56,7 +54,6 @@ public:
 	//basearguments.cc
 	void section(QString s, QString desc="");
 	void mode(int m);
-	void qthack(bool);
 	void extended(bool);
 
 	void addarg(QString, char, QString, ArgHandler * h, bool display=true);
@@ -68,15 +65,13 @@ public:
 	//commondocparts.cc
 	void outputName(Outputter * o) const;
 	void outputLicense(Outputter * o) const;
-	void outputAuthors(Outputter * o) const;
 	void outputProxyDoc(Outputter * o) const;
 
 	//commandlineparserbase.cc
 	void outputSwitches(Outputter * o, bool extended) const;
-	virtual char * mapAddress(char * d, char *) const {return d;}
 	virtual void license(FILE * fd) const;
 	virtual void version(FILE * fd) const;
-	void parseArg(int sections, const int argc, const char * const * argv, bool & defaultMode, int & arg, char * page);
+	void parseArg(int sections, const int argc, const char * const * argv, bool & defaultMode, int & arg);
 
 	virtual QString appName() const = 0;
 	const char *appVersion() const;

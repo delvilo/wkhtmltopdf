@@ -78,7 +78,6 @@ public:
 	virtual bool javaScriptConfirm(QWebFrame * frame, const QString & msg);
 	virtual bool javaScriptPrompt(QWebFrame * frame, const QString & msg, const QString & defaultValue, QString * result);
 	virtual void javaScriptConsoleMessage(const QString & message, int lineNumber, const QString & sourceID);
-	virtual QString overrideMediaType() const;
 public slots:
 	bool shouldInterruptJavaScript();
 };
@@ -141,14 +140,12 @@ public:
 
 	int loading;
 	int progressSum;
-	bool isMainLoader;
 	bool loadStartedEmitted;
 	bool hasError;
 	bool finishedEmitted;
 	TempFile tempIn;
-	int dpi;
 
-	MultiPageLoaderPrivate(const settings::LoadGlobal & settings, int dpi, MultiPageLoader & o);
+	MultiPageLoaderPrivate(const settings::LoadGlobal & settings, MultiPageLoader & o);
 	~MultiPageLoaderPrivate();
 	LoaderObject * addResource(const QUrl & url, const settings::LoadPage & settings);
 	void load();

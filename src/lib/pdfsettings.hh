@@ -58,23 +58,6 @@ struct DLL_PUBLIC Size {
 	UnitReal width;
 };
 
-/*! \brief Settings considering the table of content */
-struct DLL_PUBLIC TableOfContent {
-	TableOfContent();
-	//! Should we print dots between the name and the page number?
-	bool useDottedLines;
-	//! Name af the TOC
-	QString captionText;
-	//! Link from TOC to section headers
-	bool forwardLinks;
-	//! Link from section headers to TOC
-	bool backLinks;
-	//! How fare should we indent on every level
-	QString indentation;
-	//! Factor we should scale the font with on every level
-	float fontScale;
-};
-
 /*! \brief Class holding all user setting.
     This class holds all the user settings, settings can be filled in by hand,
     or with other methods.
@@ -89,9 +72,6 @@ struct DLL_PUBLIC PdfGlobal {
 	//! Log level
 	LogLevel logLevel;
 
-	//! Should relative links be resolved or kept as-is
-	bool resolveRelativeLinks;
-
 	//! Should we orientate in landscape or portrate
 	QPrinter::Orientation orientation;
 
@@ -101,15 +81,6 @@ struct DLL_PUBLIC PdfGlobal {
 	//! What dpi should be used when printing
 	int dpi;
 
-	//! When pagenumbers are printed, apply this offset to them all
-	int pageOffset;
-
-	//! Should we generate an outline and put it into the pdf file
-	bool outline;
-
-	//! Maximal depth of the generated outline
-	int outlineDepth;
-
 	//! The file where in to store the output
 	QString out;
 
@@ -118,72 +89,16 @@ struct DLL_PUBLIC PdfGlobal {
 	//! Margin related settings
 	Margin margin;
 
-	QString viewportSize;
-
-	int imageDPI;
-	int imageQuality;
-
 	LoadGlobal load;
 
 	QString get(const char * name);
 	bool set(const char * name, const QString & value);
 };
 
-/*! \brief Settings considering headers and footers */
-struct DLL_PUBLIC HeaderFooter {
-	HeaderFooter();
-	//! Size of the font used to render the text
-	int fontSize;
-	//! Name of font used to render text
-	QString fontName;
-	//! Text to render at the left
-	QString left;
-	//! Text to render at the right
-	QString right;
-	//! Text to render at the center
-	QString center;
-	//! Should a line separate the header/footer and the document
-	bool line;
-	//! Url of the document the html document that should be used as a header/footer
-	QString htmlUrl;
-	//! Spacing
-	float spacing;
-};
-
 struct DLL_PUBLIC PdfObject {
-	PdfObject();
-	//! Settings regarding the TOC
-	TableOfContent toc;
-
 	QString page;
-
-	//! Header related settings
-	HeaderFooter header;
-
-	//! Header related settings
-	HeaderFooter footer;
-
-	//! Should external links be links in the PDF
-	bool useExternalLinks;
-
-	//! Should internal links be links in the PDF
-	bool useLocalLinks;
-
-	//! Replacements
-	QList< QPair<QString, QString> > replacements;
-
 	LoadPage load;
-
 	Web web;
-
-	bool includeInOutline;
-
-	bool pagesCount;
-
-	bool isTableOfContent;
-
-	QString tocXsl;
-
 	QString get(const char * name);
 	bool set(const char * name, const QString & value);
 };
@@ -202,7 +117,6 @@ DLL_PUBLIC QString colorModeToStr(QPrinter::ColorMode o);
 
 }
 
-DLL_PUBLIC void dumpDefaultTOCStyleSheet(QTextStream & stream, settings::TableOfContent & s);
 }
 #include <dllend.inc>
 #endif //__PDFSETTINGS_HH__

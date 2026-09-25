@@ -81,69 +81,26 @@ struct DLL_LOCAL ReflectImpl<Size>: public ReflectClass {
 };
 
 template<>
-struct DLL_LOCAL ReflectImpl<TableOfContent>: public ReflectClass {
-	ReflectImpl(TableOfContent & c) {
-		WKHTMLTOPDF_REFLECT(useDottedLines);
-		WKHTMLTOPDF_REFLECT(captionText);
-		WKHTMLTOPDF_REFLECT(forwardLinks);
-		WKHTMLTOPDF_REFLECT(backLinks);
-		WKHTMLTOPDF_REFLECT(indentation);
-		WKHTMLTOPDF_REFLECT(fontScale);
-	}
-};
-
-template<>
 struct DLL_LOCAL ReflectImpl<PdfGlobal>: public ReflectClass {
 	ReflectImpl(PdfGlobal & c) {
 		WKHTMLTOPDF_REFLECT(size);
 		WKHTMLTOPDF_REFLECT(logLevel);
-		WKHTMLTOPDF_REFLECT(resolveRelativeLinks);
 		WKHTMLTOPDF_REFLECT(orientation);
 		WKHTMLTOPDF_REFLECT(colorMode);
 		WKHTMLTOPDF_REFLECT(dpi);
-		WKHTMLTOPDF_REFLECT(pageOffset);
-		WKHTMLTOPDF_REFLECT(outline);
-		WKHTMLTOPDF_REFLECT(outlineDepth);
 		WKHTMLTOPDF_REFLECT(out);
 		WKHTMLTOPDF_REFLECT(documentTitle);
 		WKHTMLTOPDF_REFLECT(margin);
-		WKHTMLTOPDF_REFLECT(imageDPI);
-		WKHTMLTOPDF_REFLECT(imageQuality);
 		WKHTMLTOPDF_REFLECT(load);
-		WKHTMLTOPDF_REFLECT(viewportSize);
-	}
-};
-
-template<>
-struct DLL_LOCAL ReflectImpl<HeaderFooter>: public ReflectClass {
-	ReflectImpl(HeaderFooter & c) {
-		WKHTMLTOPDF_REFLECT(fontSize);
-		WKHTMLTOPDF_REFLECT(fontName);
-		WKHTMLTOPDF_REFLECT(left);
-		WKHTMLTOPDF_REFLECT(right);
-		WKHTMLTOPDF_REFLECT(center);
-		WKHTMLTOPDF_REFLECT(line);
-		WKHTMLTOPDF_REFLECT(htmlUrl);
-		WKHTMLTOPDF_REFLECT(spacing);
 	}
 };
 
 template<>
 struct DLL_LOCAL ReflectImpl<PdfObject>: public ReflectClass {
 	ReflectImpl(PdfObject & c) {
-		WKHTMLTOPDF_REFLECT(toc);
 		WKHTMLTOPDF_REFLECT(page);
-		WKHTMLTOPDF_REFLECT(header);
-		WKHTMLTOPDF_REFLECT(footer);
-		WKHTMLTOPDF_REFLECT(useExternalLinks);
-		WKHTMLTOPDF_REFLECT(useLocalLinks);
-		WKHTMLTOPDF_REFLECT(replacements);
 		WKHTMLTOPDF_REFLECT(load);
 		WKHTMLTOPDF_REFLECT(web);
-		WKHTMLTOPDF_REFLECT(includeInOutline);
-		WKHTMLTOPDF_REFLECT(pagesCount);
-		WKHTMLTOPDF_REFLECT(isTableOfContent);
-		WKHTMLTOPDF_REFLECT(tocXsl);
 	}
 };
 
@@ -316,16 +273,6 @@ Size::Size():
 	height(UnitReal(-1,QPrinter::Millimeter)),
 	width(UnitReal(-1,QPrinter::Millimeter)) {}
 
-HeaderFooter::HeaderFooter():
-	fontSize(12),
-	fontName("Arial"),
-	left(""),
-	right(""),
-	center(""),
-	line(false),
-	htmlUrl(""),
-	spacing(0.0) {}
-
 Margin::Margin():
     top(UnitReal(-1,QPrinter::Millimeter)),
 	right(UnitReal(10,QPrinter::Millimeter)),
@@ -333,35 +280,7 @@ Margin::Margin():
 	left(UnitReal(10,QPrinter::Millimeter)) {}
 
 PdfGlobal::PdfGlobal():
-	logLevel(Info),
-	resolveRelativeLinks(true),
-	orientation(QPrinter::Portrait),
-	colorMode(QPrinter::Color),
-	dpi(96),
-	pageOffset(0),
-	outline(true),
-	outlineDepth(4),
-	out(""),
-	documentTitle(""),
-	viewportSize(""),
-	imageDPI(600),
-	imageQuality(94){};
-
-TableOfContent::TableOfContent():
-	useDottedLines(true),
-	captionText("Table of Contents"),
-	forwardLinks(true),
-	backLinks(false),
-	indentation("1em"),
-	fontScale(0.8f) {}
-
-PdfObject::PdfObject():
-	useExternalLinks(true),
-	useLocalLinks(true),
-	includeInOutline(true),
-	pagesCount(true),
-	isTableOfContent(false),
-	tocXsl("") {};
+	logLevel(Info), orientation(QPrinter::Portrait), colorMode(QPrinter::Color), dpi(96) {}
 
 QString PdfGlobal::get(const char * name) {
 	ReflectImpl<PdfGlobal> impl(*this);

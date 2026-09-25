@@ -20,7 +20,6 @@
 
 #include "outputter.hh"
 #include "pdfcommandlineparser.hh"
-#include <webkitfeatures.hh>
 
 using namespace wkhtmltopdf::settings;
 /*!
@@ -44,17 +43,9 @@ void PdfCommandLineParser::manpage(FILE * fd) const {
  	outputDescripton(o);
 	outputSwitches(o, true);
 	outputProxyDoc(o);
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
- 	outputHeaderFooterDoc(o);
- 	outputOutlineDoc(o);
-	outputTableOfContentDoc(o);
-#else
-	outputNotPatched(o);
-#endif
 	outputPageSizes(o);
  	outputPageBreakDoc(o);
  	outputContact(o);
- 	outputAuthors(o);
 	delete o;
 }
 
@@ -69,113 +60,35 @@ void PdfCommandLineParser::usage(FILE * fd, bool extended) const {
 	outputSynopsis(o);
  	outputDescripton(o);
 	outputSwitches(o, extended);
-#ifndef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	outputNotPatched(o);
-#endif
 	if (extended) {
 		outputPageSizes(o);
 		outputProxyDoc(o);
-		outputHeaderFooterDoc(o);
-		outputOutlineDoc(o);
-		outputTableOfContentDoc(o);
 	}
  	outputContact(o);
 	delete o;
 }
 
-/*!
- * Load default arguments and put them in the settings structure
- */
-//void PdfCommandLineParser::loadDefaults() {
-	//settings.in.clear();
-	//settings.proxy.host = "";
-	//foreach(ArgHandler * h, longToHandler)
-	//	h->useDefault(*d);
-
-	//Load configuration from environment
-	//char * val;
-	//const char * vars[] = {"proxy","all_proxy","http_proxy", NULL};
-	//for(int i=0; vars[i]; ++i) {
-	//	if ((val = getenv("proxy"))) {
-	//		bool ok=false;
-	//		Settings::ProxySettings p = Settings::strToProxy(val, &ok);
-	//		if (ok)
-	//			settings.proxy = p;
-	//	}
-	//}
-//}
-
-
-/*!
- * Parse command line arguments, and set settings accordingly.
- * \param argc the number of command line arguments
- * \param argv a NULL terminated list with the arguments
- */
+// Accept page options before or after the input, and global options before it.
 void PdfCommandLineParser::parseArguments(int argc, const char * const * argv) {
 	bool defaultMode = false;
-	int arg=1;
-
-	PdfObject def;
-
-	//Parse global options
-	for (;arg < argc;++arg) {
+	int arg = 1;
+	for (; arg < argc; ++arg) {
 		if (argv[arg][0] != '-' || argv[arg][1] == '\0' || defaultMode) break;
-		parseArg(global | page, argc, argv, defaultMode, arg, (char *)&def);
+		parseArg(global | page, argc, argv, defaultMode, arg);
 	}
-
-	//Parse page options
-	while (arg < argc-1) {
-		pageSettings.push_back(def);
-		PdfObject & ps = pageSettings.back();
-		int sections = page;
-		if (!strcmp(argv[arg],"cover")) {
-			++arg;
-			if (arg >= argc-1) {
-				fprintf(stderr, "You need to specify a input file to cover\n\n");
-				usage(stderr, false);
-				exit(1);
-			}
-			ps.page = QString::fromLocal8Bit(argv[arg++]);
-			// parse page options and then override the header/footer settings
-			for (;arg < argc;++arg) {
-				if (argv[arg][0] != '-' || argv[arg][1] == '\0' || defaultMode) break;
-				parseArg(sections, argc, argv, defaultMode, arg, (char*)&ps);
-			}
-
-			ps.header.left = ps.header.right = ps.header.center = "";
-			ps.footer.left = ps.footer.right = ps.footer.center = "";
-			ps.header.line = ps.footer.line = false;
-			ps.header.htmlUrl = ps.footer.htmlUrl = "";
-			ps.includeInOutline = false;
-
-			continue;
-		} else if (!strcmp(argv[arg],"toc")) {
-			++arg;
-			sections = page | toc;
-			ps.isTableOfContent = true;
-		} else {
-			if (!strcmp(argv[arg],"page")) {
-				++arg;
-				if (arg >= argc-1) {
-					fprintf(stderr, "You need to specify a input file to page\n\n");
-					usage(stderr, false);
-					exit(1);
-				}
-			}
-			QByteArray a(argv[arg]);
-			ps.page = QString::fromLocal8Bit(a);
-			++arg;
-		}
-		for (;arg < argc;++arg) {
-			if (argv[arg][0] != '-' || argv[arg][1] == '\0' || defaultMode) break;
-			parseArg(sections, argc, argv, defaultMode, arg, (char*)&ps);
-		}
+	if (arg < argc && (!strcmp(argv[arg], "cover") || !strcmp(argv[arg], "toc") || !strcmp(argv[arg], "page"))) {
+		fprintf(stderr, "Document object commands have been removed; specify one HTML input and one PDF output.\n");
+		exit(1);
 	}
-
-	if (pageSettings.size() == 0 || argc < 2) {
-		fprintf(stderr, "You need to specify at least one input file, and exactly one output file\nUse - for stdin or stdout\n\n");
+	if (arg < argc) pageSettings.page = QString::fromLocal8Bit(argv[arg++]);
+	for (; arg < argc - 1; ++arg) {
+		if (argv[arg][0] != '-' || argv[arg][1] == '\0' || defaultMode) break;
+		parseArg(page, argc, argv, defaultMode, arg);
+	}
+	if (pageSettings.page.isEmpty() || arg != argc - 1) {
+		fprintf(stderr, "You need to specify exactly one HTML input file and one PDF output file.\nUse - for stdin or stdout.\n\n");
 		usage(stderr, false);
 		exit(1);
 	}
-	globalSettings.out = QString::fromLocal8Bit(argv[argc-1]);
+	globalSettings.out = QString::fromLocal8Bit(argv[arg]);
 }

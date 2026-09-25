@@ -78,14 +78,17 @@ private slots:
 		QCOMPARE(image.pixel(10, 10), qRgb(255, 0, 0));
 	}
 
-	void documentPrintingAndPaginationCapability() {
+	void documentPrintingAndPagination() {
 		QWebPage native;
 		QSignalSpy loaded(&native, SIGNAL(loadFinished(bool)));
-		native.mainFrame()->setHtml("<html><body><h1>First</h1>"
+		native.mainFrame()->setHtml("<html><body><h1 id='first'>First</h1>"
+			"<a href='#first' style='color:red'>Internal</a>"
+			"<a href='https://example.org/'>External</a>"
 			"<h1 style='page-break-before:always'>Second</h1>"
 			"<h1 style='page-break-before:always'>Third</h1></body></html>");
 		QTRY_VERIFY(!loaded.isEmpty());
 		WebKitPage page(native);
+		const QString originalHtml = native.mainFrame()->toHtml();
 		QTemporaryFile target;
 		QVERIFY(target.open());
 		const QString path = target.fileName();
@@ -94,9 +97,9 @@ private slots:
 		printer.setOutputFormat(QPrinter::PdfFormat);
 		printer.setOutputFileName(path);
 		QScopedPointer<PagePrinter> document(page.createPrinter(&printer));
-		QVERIFY(!document->supportsPagination()); // No pagination painter supplied.
 		document->printDocument();
 		document.reset();
+		QCOMPARE(native.mainFrame()->toHtml(), originalHtml);
 		QFile output(path);
 		QVERIFY(output.open(QIODevice::ReadOnly));
 		const QByteArray pdf = output.readAll();
@@ -105,23 +108,14 @@ private slots:
 		QRegExp pages("/Type\\s*/Page[\\s/>]");
 		int count = 0, position = 0;
 		const QString contents = QString::fromLatin1(pdf.constData(), pdf.size());
+		QVERIFY(!contents.contains(QRegExp("/Subtype\\s*/Link")));
+		QVERIFY(!contents.contains("/Outlines"));
 		while ((position = pages.indexIn(contents, position)) != -1) {
 			++count;
 			position += pages.matchedLength();
 		}
 		QCOMPARE(count, 3);
 		output.close();
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-		QPainter painter(&printer);
-		document.reset(page.createPrinter(&printer, &painter));
-		QVERIFY(document->supportsPagination());
-		QCOMPARE(document->pageCount(), 3);
-		const QList<DomElement> headings = page.dom().findAllElements("h1");
-		QCOMPARE(document->elementLocation(headings[1]).first, 2);
-		document->spoolPage(1);
-		document.reset();
-		QVERIFY(painter.end());
-#endif
 	}
 };
 

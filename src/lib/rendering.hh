@@ -5,8 +5,6 @@
 #define WKHTMLTOPDF_RENDERING_HH
 
 #include <QList>
-#include <QPair>
-#include <QRectF>
 #include <QSharedPointer>
 #include <QSize>
 #include <QString>
@@ -44,7 +42,6 @@ public:
 
 private:
 	QSharedPointer<Data> d;
-	friend class PagePrinter;
 };
 
 class DLL_LOCAL DomDocument {
@@ -74,27 +71,18 @@ class DLL_LOCAL PagePrinter {
 public:
 	virtual ~PagePrinter() {}
 	virtual void printDocument() = 0;
-	// Only patched WebKit supports element-aware pagination. Unpatched builds
-	// support printDocument(); they report false here and no page locations.
-	virtual bool supportsPagination() const = 0;
-	virtual int pageCount() const = 0;
-	virtual QPair<int, QRectF> elementLocation(const DomElement & element) const = 0;
-	virtual void spoolPage(int page) = 0;
-protected:
-	// Only printer implementations need access to an element's backend data.
-	const DomElement::Data * elementData(const DomElement & element) const { return element.d.data(); }
 };
 
 // Page lifetime belongs to ResourceLoader. DOM/image services are borrowed;
 // createPrinter transfers ownership to the caller. Destroy printers before
-// their page, QPrinter or QPainter. A painter is required for pagination.
+// their loaded page and QPrinter. Qt5 paginates the whole document internally.
 class DLL_LOCAL RenderPage {
 public:
 	virtual ~RenderPage() {}
 	virtual DomDocument & dom() = 0;
 	virtual ImageRenderer & image() = 0;
 	virtual void applySettings(const settings::Web & settings) = 0;
-	virtual PagePrinter * createPrinter(QPrinter * printer, QPainter * painter = 0) = 0;
+	virtual PagePrinter * createPrinter(QPrinter * printer) = 0;
 };
 
 }

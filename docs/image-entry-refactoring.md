@@ -21,7 +21,7 @@ This change implements the selected items 1, 2, 4, 6 and 7:
   remaining image. Zero dimensions and values below `-1` are rejected.
 - Crop coordinates outside the rendered viewport fail. Large crop dimensions
   are clipped before rectangle construction to avoid integer overflow.
-- Raster images must fit Qt 4's signed-int ARGB32 byte-count limit. Allocation
+- Raster allocation is bounded to a signed-int ARGB32 byte count. Allocation
   failure is reported without overwriting the destination.
 - Explicit formats and inferred file suffixes are normalized to lowercase.
   SVG and the formats reported by the installed Qt image writers are accepted.
@@ -32,10 +32,8 @@ This change implements the selected items 1, 2, 4, 6 and 7:
 
 ## Output behavior
 
-Qt 5.1 and later use `QSaveFile` with direct-write fallback disabled. Older Qt
-versions use a sibling `QTemporaryFile` and Linux's rename operation.
-Existing file permissions are preserved. On the older-Qt fallback, new files
-retain the owner-only permissions of `QTemporaryFile`.
+Qt5 uses `QSaveFile` with direct-write fallback disabled. The older Qt fallback
+has been removed. Existing file permissions are preserved.
 
 The destination directory must permit creating and replacing files. Existing
 symbolic links are followed and retained. Non-regular output paths, such as a
@@ -66,8 +64,8 @@ and single completion callbacks. On Linux it injects PNG and SVG write failures
 using a file-size limit and checks that old contents survive without temporary
 files. Where available, `/dev/full` checks stdout failures.
 
-Validation performed on Linux with Qt 5.15 and unpatched QtWebKit: all 13 image
-tests passed; the existing suite passed 6 tests and skipped its patched-Qt-only
-test. Auto-sized, cropped and fixed-size PNG fixtures also matched their
-pre-refactoring pixels exactly. Patched Qt 4 builds still require validation on
-Linux.
+The current Qt5 suite also verifies smart/fixed width, visible image options
+without ignored-option warnings, actual transparent PNG alpha and layout zoom.
+Standard SVG output remains; the patched SVG view-box clipping extension is
+removed. See [rendering interfaces](rendering-interfaces.md) for the supported
+Qt5 baseline and the complete regression commands.

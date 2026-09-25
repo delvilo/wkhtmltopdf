@@ -21,6 +21,18 @@ PDF_REMOVED = SHARED_REMOVED | {
     'default-header', 'lowquality', 'copies', 'collate', 'no-collate',
     'no-pdf-compression', 'enable-forms', 'disable-forms',
     'read-args-from-stdin', 'dump-outline', 'dump-default-toc-xsl',
+    'image-quality', 'image-dpi', 'outline', 'no-outline', 'outline-depth',
+    'viewport-size', 'include-in-outline', 'exclude-from-outline',
+    'disable-smart-shrinking', 'enable-smart-shrinking', 'print-media-type',
+    'no-print-media-type', 'disable-internal-links', 'enable-internal-links',
+    'disable-external-links', 'enable-external-links', 'resolve-relative-links',
+    'keep-relative-links', 'enable-toc-back-links', 'disable-toc-back-links',
+    'page-offset', 'replace', 'xsl-style-sheet', 'toc-header-text',
+    'disable-toc-links', 'disable-dotted-lines', 'toc-text-size-shrink',
+    'toc-level-indentation',
+    *{prefix + suffix for prefix in ['header-', 'footer-']
+      for suffix in ['center', 'font-name', 'font-size', 'left', 'line', 'right', 'spacing', 'html']},
+    'no-header-line', 'no-footer-line',
 }
 HTML = b'''<!doctype html><html><head><meta charset="utf-8"></head>
 <body><h1>Conversion smoke test</h1><p>Text remains visible.</p>
@@ -37,8 +49,6 @@ class OptionRemovalSmoke(unittest.TestCase):
         cls.source.write_bytes(HTML)
         cls.env = os.environ.copy()
         cls.env.setdefault('QT_QPA_PLATFORM', 'offscreen')
-        result = cls.run_cli('wkhtmltopdf', '--version')
-        cls.patched = b'with patched qt' in result.stdout
 
     @classmethod
     def tearDownClass(cls):
@@ -62,6 +72,8 @@ class OptionRemovalSmoke(unittest.TestCase):
         if pages is not None:
             self.assertEqual(len(re.findall(rb'/Type\s*/Page(?=[\s/>])', data)), pages)
         self.assertNotIn(b'/AcroForm', data)
+        self.assertNotIn(b'/Outlines', data)
+        self.assertIsNone(re.search(rb'/Subtype\s*/Link', data), 'PDF must not contain clickable link annotations')
 
     def test_removed_cli_options_and_short_aliases(self):
         for name, options in [('wkhtmltopdf', PDF_REMOVED), ('wkhtmltoimage', SHARED_REMOVED)]:
@@ -133,8 +145,8 @@ class OptionRemovalSmoke(unittest.TestCase):
         self.assertEqual(initialize(0), 1)
         try:
             for prefix, removed in [
-                ('wkhtmltopdf', ['quiet', 'useGraphics', 'resolution', 'copies', 'collate', 'dumpOutline', 'useCompression']),
-                ('wkhtmltoimage', ['quiet', 'useGraphics', 'loadPage.checkboxSvg', 'loadPage.checkboxCheckedSvg', 'loadPage.radiobuttonSvg', 'loadPage.radiobuttonCheckedSvg']),
+                ('wkhtmltopdf', ['quiet', 'useGraphics', 'resolution', 'copies', 'collate', 'dumpOutline', 'useCompression', 'resolveRelativeLinks', 'pageOffset', 'outline', 'outlineDepth', 'viewportSize', 'imageDPI', 'imageQuality']),
+                ('wkhtmltoimage', ['quiet', 'useGraphics', 'loadPage.checkboxSvg', 'loadPage.checkboxCheckedSvg', 'loadPage.radiobuttonSvg', 'loadPage.radiobuttonCheckedSvg', 'loadPage.printMediaType', 'web.enableIntelligentShrinking']),
             ]:
                 create = bind(prefix + '_create_global_settings', [], ptr)
                 setting = bind(prefix + '_set_global_setting', [ptr, text, text], ctypes.c_int)
@@ -159,42 +171,72 @@ class OptionRemovalSmoke(unittest.TestCase):
             destroy_object = bind('wkhtmltopdf_destroy_object_settings', [ptr], None)
             obj = create_object()
             try:
-                for key in ['produceForms', 'web.enablePlugins', 'load.checkboxSvg', 'load.checkboxCheckedSvg', 'load.radiobuttonSvg', 'load.radiobuttonCheckedSvg']:
+                for key in ['produceForms', 'web.enablePlugins', 'load.checkboxSvg', 'load.checkboxCheckedSvg', 'load.radiobuttonSvg', 'load.radiobuttonCheckedSvg',
+                            'header.left', 'footer.right', 'toc.captionText', 'tocXsl',
+                            'isTableOfContent', 'includeInOutline', 'pagesCount',
+                            'useExternalLinks', 'useLocalLinks', 'replacements',
+                            'web.enableIntelligentShrinking', 'web.printMediaType', 'load.printMediaType']:
                     self.assertEqual(set_object(obj, key.encode(), b'true'), 0, key)
                 self.assertEqual(set_object(obj, b'web.enableJavascript', b'false'), 1)
                 self.assertEqual(set_object(obj, b'load.loadErrorHandling', b'skip'), 1)
             finally:
                 destroy_object(obj)
 
-            gs = lib.wkhtmltopdf_create_global_settings()
-            self.assertEqual(lib.wkhtmltopdf_set_global_setting(gs, b'logLevel', b'none'), 1)
-            converter = bind('wkhtmltopdf_create_converter', [ptr], ptr)(gs)
-            obj = create_object()
-            bind('wkhtmltopdf_add_object', [ptr, ptr, text], None)(converter, obj, HTML)
-            try:
-                self.assertEqual(bind('wkhtmltopdf_convert', [ptr], ctypes.c_int)(converter), 1)
-                output = ptr()
-                length = bind('wkhtmltopdf_get_output', [ptr, ctypes.POINTER(ptr)], ctypes.c_long)(converter, ctypes.byref(output))
-                self.assertGreater(length, 0)
-                self.assert_pdf(ctypes.string_at(output, length), pages=1)
-            finally:
-                bind('wkhtmltopdf_destroy_converter', [ptr], None)(converter)
+            extended = bind('wkhtmltopdf_extended_qt', [], ctypes.c_int)
+            self.assertEqual(extended(), 0)
+            callback_type = ctypes.CFUNCTYPE(None, ptr, ctypes.c_int)
+            set_finished = bind('wkhtmltopdf_set_finished_callback', [ptr, callback_type], None)
+            convert = bind('wkhtmltopdf_convert', [ptr], ctypes.c_int)
+            get_output = bind('wkhtmltopdf_get_output', [ptr, ctypes.POINTER(ptr)], ctypes.c_long)
+            for count, out, success in [(0, '', False), (2, '', False), (1, '', True),
+                                        (1, str(self.work / 'missing' / 'output.pdf'), False)]:
+                with self.subTest(inputs=count, out=out):
+                    gs = lib.wkhtmltopdf_create_global_settings()
+                    self.assertEqual(lib.wkhtmltopdf_set_global_setting(gs, b'logLevel', b'none'), 1)
+                    self.assertEqual(lib.wkhtmltopdf_set_global_setting(gs, b'out', out.encode()), 1)
+                    converter = bind('wkhtmltopdf_create_converter', [ptr], ptr)(gs)
+                    for _ in range(count):
+                        obj = create_object()
+                        bind('wkhtmltopdf_add_object', [ptr, ptr, text], None)(converter, obj, HTML)
+                    finished = []
+                    callback = callback_type(lambda _, result: finished.append(result))
+                    set_finished(converter, callback)
+                    try:
+                        self.assertEqual(convert(converter), int(success))
+                        self.assertEqual(finished, [int(success)])
+                        output = ptr()
+                        length = get_output(converter, ctypes.byref(output))
+                        if success:
+                            self.assertGreater(length, 0)
+                            self.assert_pdf(ctypes.string_at(output, length), pages=1)
+                        else:
+                            self.assertEqual(length, 0)
+                    finally:
+                        bind('wkhtmltopdf_destroy_converter', [ptr], None)(converter)
         finally:
             deinitialize()
 
-    def test_patched_qt_multi_object_headers_and_toc(self):
-        if not self.patched:
-            self.skipTest('Requires a build with patched Qt')
-        header = self.work / 'header.html'
-        header.write_text('<html><body>Header text</body></html>')
-        target = self.work / 'book.pdf'
-        result = self.run_cli(
-            'wkhtmltopdf', '--log-level', 'none', '--enable-local-file-access',
-            '--header-html', header, '--footer-center', '[page]/[topage]',
-            'toc', self.source, self.source, target,
-        )
+    def test_rejects_multiple_inputs_and_object_commands(self):
+        target = self.work / 'rejected.pdf'
+        for inputs in [[], [self.source, self.source], ['cover', self.source],
+                       ['toc', self.source], ['page', self.source]]:
+            with self.subTest(inputs=inputs):
+                target.write_bytes(b'original')
+                result = self.run_cli('wkhtmltopdf', *inputs, target)
+                self.assertEqual(result.returncode, 1)
+                self.assertNotIn(b'Loading', result.stderr)
+                self.assertEqual(target.read_bytes(), b'original')
+
+    def test_one_html_can_produce_multiple_pages_without_pdf_links(self):
+        html = b'''<html><head><title>Single input</title></head><body>
+        <h1 id="first">First page</h1><a href="#last">Internal link text</a>
+        <a href="https://example.org/">External link text</a>
+        <div style="page-break-before:always">Second page</div>
+        <div id="last" style="page-break-before:always">Third page</div>
+        </body></html>'''
+        result = self.run_cli('wkhtmltopdf', '--log-level', 'none', '-', '-', data=html)
         self.assert_success(result)
-        self.assert_pdf(target.read_bytes(), pages=3)
+        self.assert_pdf(result.stdout, pages=3)
 
 
 if __name__ == '__main__':

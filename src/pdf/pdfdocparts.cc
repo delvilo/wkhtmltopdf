@@ -20,7 +20,6 @@
 
 #include "outputter.hh"
 #include "pdfcommandlineparser.hh"
-#include <webkitfeatures.hh>
 
 #define STRINGIZE_(x) #x
 #define STRINGIZE(x) STRINGIZE_(x)
@@ -41,237 +40,44 @@ void PdfCommandLineParser::outputManName(Outputter * o) const {
 */
 void PdfCommandLineParser::outputSynopsis(Outputter * o) const {
 	o->beginSection("Synopsis");
-	o->verbatim("wkhtmltopdf [GLOBAL OPTION]... [OBJECT]... <output file>\n");
-	o->endSection();
-
-	o->beginSection("Document objects");
-	o->beginParagraph();
-	o->text("wkhtmltopdf is able to put several objects into the output file, an object is either "
-			"a single webpage, a cover webpage or a table of contents.  The objects are put into "
-			"the output document in the order they are specified on the command line, options can "
-			"be specified on a per object basis or in the global options area. Options from the ");
-	o->sectionLink("Global Options");
-	o->text(" section can only be placed in the global options area.");
-	o->endParagraph();
-
-	o->paragraph("A page objects puts the content of a single webpage into the output document.");
-	o->verbatim("(page)? <input url/file name> [PAGE OPTION]...");
-	o->beginParagraph();
-	o->text("Options for the page object can be placed in the global options and the page "
-			"options areas. The applicable options can be found in the ");
-	o->sectionLink("Page Options");
-	o->text(" and ");
-	o->sectionLink("Headers And Footer Options");
-	o->text(" sections.");
-	o->endParagraph();
-
-	o->paragraph("A cover objects puts the content of a single webpage into the output document, "
-				 "the page does not appear in the table of contents, and does not have headers and footers.");
-	o->verbatim("cover <input url/file name> [PAGE OPTION]...");
-	o->paragraph("All options that can be specified for a page object can also be specified for a cover.");
-
-	o->paragraph("A table of contents object inserts a table of contents into the output document.");
-	o->verbatim("toc [TOC OPTION]...");
-	o->beginParagraph();
-	o->text("All options that can be specified for a page object can also be specified for a toc, "
-			"further more the options from the ");
-	o->sectionLink("TOC Options");
-	o->text(" section can also be applied. The table of contents is generated via XSLT which means "
-			"that it can be styled using --xsl-style-sheet. See the ");
-	o->sectionLink("Table Of Contents");
-	o->text(" section.");
-	o->endParagraph();
-
+	o->verbatim("wkhtmltopdf [OPTION]... <input HTML URL/file> <output PDF>\n");
+	o->paragraph("Exactly one HTML input is accepted. Use - for stdin or stdout. "
+		"Page options may also follow the input; global options must precede it.");
 	o->endSection();
 }
 
-
-/*!
-  Explain what the program does
-  \param o The outputter to output to
-*/
 void PdfCommandLineParser::outputDescripton(Outputter * o) const {
 	o->beginSection("Description");
-	o->beginParagraph();
-	o->text("Converts one or more HTML pages into a PDF document, ");
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	o->text("using wkhtmltopdf patched qt.");
-#else
-	o->bold("not");
-	o->text(" using wkhtmltopdf patched qt.");
-#endif
-	o->endParagraph();
+	o->paragraph("Converts one HTML document to PDF using Qt5/WebKit on Linux. "
+		"Long HTML documents are automatically split into PDF pages. "
+		"The offscreen platform is selected by default for headless operation.");
 	o->endSection();
 }
 
-/*!
-  Add explanation about reduced functionality without patched qt/webkit
-  \param o The outputter to output to
-*/
-void PdfCommandLineParser::outputNotPatched(Outputter * o) const {
-	o->beginSection("Reduced Functionality");
-	o->paragraph("This version of wkhtmltopdf has been compiled against a version of "
-				 "QT without the wkhtmltopdf patches. Therefore some features are missing, "
-				 "if you need these features please use the static version.");
-
-	o->paragraph("Currently the list of features only supported with patch QT includes:");
-	o->beginList();
-	o->listItem("Printing more than one HTML document into a PDF file.");
-	o->listItem("Running without an X11 server.");
-	o->listItem("Adding a document outline to the PDF file.");
-	o->listItem("Adding headers and footers to the PDF file.");
-	o->listItem("Generating a table of contents.");
-	o->listItem("Adding links in the generated PDF file.");
-	o->listItem("Printing using the screen media-type.");
-	o->listItem("Disabling the smart shrink feature of WebKit.");
-	o->endList();
-	o->endSection();
-}
-
-/*!
-  Explain the page breaking is somewhat broken
-  \param o The outputter to output to
-*/
 void PdfCommandLineParser::outputPageBreakDoc(Outputter * o) const {
 	o->beginSection("Page Breaking");
-	o->paragraph(
-		"The current page breaking algorithm of WebKit leaves much to be desired. "
-		"Basically WebKit will render everything into one long page, and then cut it up "
-		"into pages. This means that if you have two columns of text where one is "
-		"vertically shifted by half a line. Then WebKit will cut a line into to pieces "
-		"display the top half on one page. And the bottom half on another page. "
-		"It will also break image in two and so on.  If you are using the patched version of "
-		"QT you can use the CSS page-break-inside property to remedy this somewhat. "
-		"There is no easy solution to this problem, until this is solved try organizing "
-		"your HTML documents such that it contains many lines on which pages can be cut "
-		"cleanly.");
+	o->paragraph("Qt5/WebKit handles pagination and print CSS. Arrange long documents "
+		"with suitable page-break-before, page-break-after and page-break-inside rules, "
+		"and check the output for content taller than a page. Layout zoom and paper "
+		"margins are available; WebKit's automatic print shrinking is not configurable.");
 	o->endSection();
 }
 
-/*!
-  Output documentation about headers and footers
-  \param o The outputter to output to
-*/
-void PdfCommandLineParser::outputHeaderFooterDoc(Outputter * o) const {
-	o->beginSection("Footers And Headers");
-	o->paragraph("Headers and footers can be added to the document by the --header-* and --footer* "
-				 "arguments respectively.  In header and footer text string supplied to e.g. --header-left, "
-				 "the following variables will be substituted.");
-	o->verbatim(
-" * [page]       Replaced by the number of the pages currently being printed\n"
-" * [frompage]   Replaced by the number of the first page to be printed\n"
-" * [topage]     Replaced by the number of the last page to be printed\n"
-" * [webpage]    Replaced by the URL of the page being printed\n"
-" * [section]    Replaced by the name of the current section\n"
-" * [subsection] Replaced by the name of the current subsection\n"
-" * [date]       Replaced by the current date in system local format\n"
-" * [isodate]    Replaced by the current date in ISO 8601 extended format\n"
-" * [time]       Replaced by the current time in system local format\n"
-" * [title]      Replaced by the title of the of the current page object\n"
-" * [doctitle]   Replaced by the title of the output document\n"
-" * [sitepage]   Replaced by the number of the page in the current site being converted\n"
-" * [sitepages]  Replaced by the number of pages in the current site being converted\n"
-"\n");
-	o->paragraph("As an example specifying --header-right \"Page [page] of [topage]\", "
-				 "will result in the text \"Page x of y\" where x is the number of the "
-				 "current page and y is the number of the last page, to appear in the upper "
-				 "right corner in the document.");
-	o->paragraph("Headers and footers can also be supplied with HTML documents. As an example one "
-				 "could specify --header-html header.html, and use the following content in header.html:");
-	o->verbatim(
-"<!DOCTYPE html>\n"
-"<html><head><script>\n"
-"function subst() {\n"
-"    var vars = {};\n"
-"    var query_strings_from_url = document.location.search.substring(1).split('&');\n"
-"    for (var query_string in query_strings_from_url) {\n"
-"        if (query_strings_from_url.hasOwnProperty(query_string)) {\n"
-"            var temp_var = query_strings_from_url[query_string].split('=', 2);\n"
-"            vars[temp_var[0]] = decodeURI(temp_var[1]);\n"
-"        }\n"
-"    }\n"
-"    var css_selector_classes = ['page', 'frompage', 'topage', 'webpage', 'section', 'subsection', 'date', 'isodate', 'time', 'title', 'doctitle', 'sitepage', 'sitepages'];\n"
-"    for (var css_class in css_selector_classes) {\n"
-"        if (css_selector_classes.hasOwnProperty(css_class)) {\n"
-"            var element = document.getElementsByClassName(css_selector_classes[css_class]);\n"
-"            for (var j = 0; j < element.length; ++j) {\n"
-"                element[j].textContent = vars[css_selector_classes[css_class]];\n"
-"            }\n"
-"        }\n"
-"    }\n"
-"}\n"
-"</script></head><body style=\"border:0; margin: 0;\" onload=\"subst()\">\n"
-"<table style=\"border-bottom: 1px solid black; width: 100%\">\n"
-"  <tr>\n"
-"    <td class=\"section\"></td>\n"
-"    <td style=\"text-align:right\">\n"
-"      Page <span class=\"page\"></span> of <span class=\"topage\"></span>\n"
-"    </td>\n"
-"  </tr>\n"
-"</table>\n"
-"</body></html>\n"
-"\n"
-		);
-	o->paragraph("As can be seen from the example, the arguments are sent to the header/footer "
-				 "html documents in get fashion.");
-	o->endSection();
-}
-
-void PdfCommandLineParser::outputTableOfContentDoc(Outputter * o) const {
-	o->beginSection("Table Of Contents");
-	o->paragraph("A table of contents can be added to the document by adding a toc object "
-				 "to the command line. For example:");
-	o->verbatim("wkhtmltopdf toc https://doc.qt.io/archives/qt-4.8/qstring.html qstring.pdf\n");
-	o->paragraph("The table of contents is generated based on the H tags in the input "
-				 "documents. First a XML document is generated, then it is converted to "
-				 "HTML using XSLT.");
-	o->paragraph("The XSLT document can be specified using the --xsl-style-sheet switch. "
-				 "For example:");
-	o->verbatim("wkhtmltopdf toc --xsl-style-sheet my.xsl https://doc.qt.io/archives/qt-4.8/qstring.html qstring.pdf\n");
-	o->paragraph("The XML document is in the namespace "
-				 "\"http://wkhtmltopdf.org/outline\", "
-				 "it has a root node called \"outline\" which contains a number of "
-				 "\"item\" nodes. An item can contain any number of items. These are the "
-				 "outline subsections to the section the item represents. A item node "
-				 "has the following attributes:");
-	o->beginList();
-	o->listItem("\"title\" the name of the section.");
-	o->listItem("\"page\" the page number the section occurs on.");
-	o->listItem("\"link\" a URL that links to the section.");
-	o->listItem("\"backLink\" the name of the anchor the section will link back to.");
-	o->endList();
-
-	o->paragraph("The remaining TOC options only affect the default style sheet "
-				 "so they will not work when specifying a custom style sheet.");
-	o->endSection();
-}
-
-/*!
-  Output documentation about outlines
-  \param o The outputter to output to
-*/
-void PdfCommandLineParser::outputOutlineDoc(Outputter * o) const {
-	o->beginSection("Outlines");
+void PdfCommandLineParser::outputPageSizes(Outputter * o) const {
+	o->beginSection("Page sizes");
 	o->beginParagraph();
-	o->text(
-		"Wkhtmltopdf with patched qt has support for PDF outlines also known as "
-		"book marks, this can be enabled by specifying the --outline switch. "
-		"The outlines are generated based on the <h?> tags, for an in-depth "
-		"description of how this is done see the ");
-	o->sectionLink("Table Of Contents");
-	o->text(" section. ");
+	o->text("The default page size of the rendered document is A4, but by using the --page-size "
+			"option this can be changed to almost anything else, such as: A3, Letter and Legal.  "
+			"For a full list of supported pages sizes please see ");
+	o->link("https://doc.qt.io/qt-5/qpagesize.html#PageSizeId-enum");
+	o->text(".");
 	o->endParagraph();
-	o->paragraph(
-		"The outline tree can sometimes be very deep, if the <h?> tags are "
-		"spread too generously in the HTML document.  The --outline-depth switch can "
-		"be used to bound this.");
+	o->paragraph("For a more fine grained control over the page size the "
+				 "--page-height and --page-width options may be used");
 	o->endSection();
 }
 
-/*!
-  Output contact information
-  \param o The outputter to output to
-*/
+
 void PdfCommandLineParser::outputContact(Outputter * o) const {
 	o->beginSection("Contact");
 	o->beginParagraph();
@@ -280,33 +86,3 @@ void PdfCommandLineParser::outputContact(Outputter * o) const {
 	o->endParagraph();
 	o->endSection();
 }
-
-/*!
-  Output documentation about page sizes
-  \param o The outputter to output to
-
-*/
-void PdfCommandLineParser::outputPageSizes(Outputter * o) const {
-	o->beginSection("Page sizes");
-	o->beginParagraph();
-	o->text("The default page size of the rendered document is A4, but by using the --page-size "
-			"option this can be changed to almost anything else, such as: A3, Letter and Legal.  "
-			"For a full list of supported pages sizes please see ");
-	o->link("https://doc.qt.io/archives/qt-4.8/qprinter.html#PaperSize-enum");
-	o->text(".");
-	o->endParagraph();
-	o->paragraph("For a more fine grained control over the page size the "
-				 "--page-height and --page-width options may be used");
-	o->endSection();
-}
-
-//  LocalWords:  webkit bool unpatched beginList listItem endList WebKit http
-//  LocalWords:  stroustrup wkhtmltopdf commandlineparser hh QWebFrame param px
-//  LocalWords:  STRINGIZE outputter const beginSection beginParagraph QString
-//  LocalWords:  ifdef endif endParagraph endSection GPLv GPL Truelsen Mário td
-//  LocalWords:  Bouthenot PDF CSS username BNF frompage topage webpage toPage
-//  LocalWords:  html subst unescape subsubsection getElementsByClassName args
-//  LocalWords:  textContent onload readme stdin qapplication pdf cmds google
-//  LocalWords:  todo gcc openssl sudo dep libqt gui xorg wget xvf svn linux ps
-//  LocalWords:  PageSize enum eler glibc xserver xfonts libssl dev wkhtml cd
-//  LocalWords:  nomake opensource xslt

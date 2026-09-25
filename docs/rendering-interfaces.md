@@ -1,60 +1,61 @@
-# WebKit rendering interfaces
+# Qt5/WebKit rendering interfaces
 
 The PDF and image converters use internal interfaces for resource loading, DOM
-access, page printing and image painting. The selected implementation remains
-Qt WebKit. The Qt dependencies, CLI options and public C API signatures are
-unchanged; no Qt6 or WebEngine implementation is introduced.
+access, page printing and image painting. Standard Qt5/WebKit is the only
+backend; Qt4 and patched Qt are removed. Public C function signatures are
+retained, but removed setting keys return failure and C++ consumers must rebuild.
 
-| Contract | Responsibility | Current implementation |
+| Contract | Responsibility | Implementation |
 | --- | --- | --- |
-| `ResourceLoader` | Add URL/file/stdin/memory inputs, start loading, report progress/errors/completion, release resources | `MultiPageLoader`, including the existing network manager, cookies, proxy, SSL, authentication, POST and JavaScript readiness handling |
-| `DomDocument` / `DomElement` | Query title/URLs, find elements, read attributes/text and update styles; retain element identity for links and headings | `WebKitPage` and opaque, shared `QWebElement` handles |
-| `PagePrinter` | Print a whole document, or paginate, locate elements and spool pages when patched Qt is available | `QWebFrame::print()` and the existing patched `QWebPrinter` |
-| `ImageRenderer` | Set viewport/scrollbar policy, measure content, change the page background and paint | `QWebPage` / `QWebFrame` |
+| `ResourceLoader` | Load URL/file/stdin/memory inputs, report progress/errors/completion, release resources | `MultiPageLoader`, including the network manager, cookies, proxy, SSL, authentication, POST and JavaScript readiness |
+| `DomDocument` / `DomElement` | Query title/URLs and elements, read attributes/text, update styles | `WebKitPage` and shared opaque `QWebElement` handles |
+| `PagePrinter` | Print one HTML document, including automatic PDF pagination | Standard `QWebFrame::print()` |
+| `ImageRenderer` | Set viewport/scrollbars, measure content, set page background and paint | Standard `QWebPage` / `QWebFrame` |
 
 `RenderPage` groups a loaded page's DOM, image and printing services. The factory
-in `src/lib/renderbackend.cc` is the single place where converters select the
-loader implementation. WebKit operations are confined to `multipageloader_p.hh`,
-`multipageloader.cc` and the `webkitpage` adapter; the PDF, image and outline
-algorithms use the contracts in `rendering.hh` and `resourceloader.hh`.
+in `src/lib/renderbackend.cc` selects the loader implementation. Native WebKit
+operations are confined to `multipageloader_p.hh`, `multipageloader.cc` and the
+`webkitpage` adapter.
+
+The PDF converter stores exactly one HTML input. Zero or multiple inputs fail
+before loading or output; skipping the only failed input also fails. Whole-document
+printing uses Qt5 PrintSupport, followed by file, stdout or memory delivery.
+There are no TOC/header/footer loaders, page maps, outline/link rendering,
+`QWebPrinter`, XML Patterns or patch capability guards.
+
+Standard Qt5/WebKit can emit URL annotations even without the old wkhtmltopdf
+patches. `WebKitPagePrinter` therefore uses a public `QPaintEngine` adapter that
+forwards visual operations to the PDF painter while reporting a custom engine
+type to WebKit. `QPrinter::setEngines` shares the real printer's paper settings
+and page transitions. This suppresses PDF links without modifying HTML/CSS,
+rasterizing the document, using private Qt headers or postprocessing PDF bytes.
+
+Local comparison against the previous Qt5 baseline covered default, landscape,
+custom paper/DPI and grayscale output: all 12 fixture pages had identical pixels
+and extracted text. The fixture included print CSS, styled links, an iframe,
+clipping, gradients, transforms and SVG. Its generated PDF had no link annotations.
 
 Image validation, smart width, cropping, encoding and transactional file output
-remain in the image conversion layer. PDF settings, header/footer placement,
-link resolution, outline construction and TOC generation remain in the PDF
-layer. In particular, TOC generation still needs `QXmlQuery` and the
-`xmlpatterns` module.
+remain in the image converter. Smart width and transparency are standard Qt5
+features and appear in help without unsupported-option warnings. `--zoom` uses
+`QWebFrame::setZoomFactor`; PDF DPI is independent of layout zoom. The loader
+and factory no longer accept DPI or auxiliary-loader arguments.
 
 ## Ownership and execution
 
-- Converters own their loaders through `QScopedPointer<ResourceLoader>`.
-- A loader owns each `LoaderObject` and its `RenderPage`. The references returned
-  by `dom()` and `image()` are borrowed, as are element handles. Release all
-  handles and page printers before clearing their loader.
-- Copying a `DomElement` keeps the same DOM element; it does not copy the HTML.
-  A default or unmatched element is null, and its reads return empty strings.
-- The caller owns the result of `createPrinter()`. Destroy it before its page,
-  `QPainter` or `QPrinter`. A pagination painter must be active when supplied.
-- Resource loading remains event driven, with the same QObject signals.
-  DOM reads, image painting and printing remain synchronous on the application
-  thread. These contracts do not emulate WebEngine's asynchronous operations.
-- `printDocument()` works on the unpatched Qt5 baseline. `supportsPagination()`
-  is true only for a patched build with a pagination painter. Page numbers used
-  by `spoolPage()` and `elementLocation()` are one based; an unavailable location
-  has page number `-1`. Whole-document printing must not run during an active
-  pagination session.
-
-The existing patched/unpatched feature guards are retained. `webkitfeatures.hh`
-explicitly imports the legacy capability macro from `QWebFrame`, where patched
-Qt defines it. This compile-time dependency remains until backend capabilities
-and Qt's output extensions can be decoupled. The PDF layer still uses Qt
-PrintSupport and patched Qt's link/outline drawing extensions. A later
-engine migration would need to address these output APIs and asynchronous
-execution separately; adding these interfaces does not promise feature parity
-with another rendering engine.
+- Converters own loaders through `QScopedPointer<ResourceLoader>`.
+- A loader owns its `LoaderObject` and `RenderPage`. DOM/image services and
+  element handles are borrowed; release them before clearing the loader.
+- Copying a `DomElement` refers to the same element. Unmatched/default handles
+  are null and return empty strings when read.
+- The caller owns `createPrinter(QPrinter*)`. Destroy the returned printer before
+  its loaded page and `QPrinter`. The painter argument and element-location/page
+  spooling APIs are removed; Qt5 handles pagination internally.
+- Loading remains event driven through QObject signals. DOM reads, image painting
+  and PDF printing are synchronous on the application thread. A future backend
+  must address its own threading and asynchronous behavior.
 
 ## Regression checks
-
-Build the shared library and both executables, then run:
 
 ```sh
 export LD_LIBRARY_PATH="$PWD/bin${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
@@ -69,13 +70,12 @@ make
 ./rendering_interfaces
 ```
 
-The HTTP fixture uses only loopback and checks redirects, extra headers,
-subresource header propagation, cookies and cookie-jar persistence, basic
-authentication, POST bodies, HTTP errors, user stylesheets, JavaScript readiness
-and disabled scripts for the converter paths.
+The HTTP fixture checks redirects, headers and propagation, cookies and
+cookie-jar persistence, basic authentication, POST, HTTP errors, user stylesheets,
+JavaScript readiness and disabled scripts on loopback.
 
-The C++ tests exercise real WebKit-backed interfaces, including copied DOM
-handles, heading/link selectors, null elements, content sizing, transparent
-painting and a three-page PDF. Patched builds additionally check page counts,
-element locations and page spooling. The existing patched-only smoke test covers
-multi-document output with headers and a TOC; it is skipped on unpatched Qt.
+C++ tests exercise real DOM handles, selectors, content sizing, transparency and
+three-page printing. CLI/C API checks cover one HTML producing multiple pages,
+rejection of multiple inputs and removed settings, absence of PDF link/outline
+annotations, completion callbacks, smart/fixed image width, transparency, zoom,
+cropping and output failures. No test requires a patched Qt build.
