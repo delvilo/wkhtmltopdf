@@ -1,4 +1,5 @@
 // Integration tests for the synchronous WebKit rendering contracts.
+#include "resourceloader.hh"
 #include "webkitpage.hh"
 #include <QApplication>
 #include <QFile>
@@ -116,6 +117,53 @@ private slots:
 		}
 		QCOMPARE(count, 3);
 		output.close();
+	}
+
+	void fileCopyLogic() {
+		// Small file copy test
+		{
+			QTemporaryFile srcFile;
+			QVERIFY(srcFile.open());
+			const QByteArray smallData = "Hello, world! Small file copy test.";
+			srcFile.write(smallData);
+			srcFile.flush();
+			srcFile.seek(0);
+
+			QTemporaryFile dstFile;
+			QVERIFY(dstFile.open());
+
+			QVERIFY(ResourceLoader::copyFile(srcFile, dstFile));
+
+			QFile readBack(dstFile.fileName());
+			QVERIFY(readBack.open(QIODevice::ReadOnly));
+			QCOMPARE(readBack.readAll(), smallData);
+			readBack.close();
+		}
+
+		// Large file copy test (11MB > 5MB chunk buffer size)
+		{
+			QTemporaryFile srcFile;
+			QVERIFY(srcFile.open());
+			QByteArray largeData(1024 * 1024 * 11, 'X');
+			for (int i = 0; i < 100; ++i) {
+				largeData[i] = static_cast<char>(i);
+				largeData[largeData.size() - 1 - i] = static_cast<char>(i);
+			}
+			srcFile.write(largeData);
+			srcFile.flush();
+			srcFile.seek(0);
+
+			QTemporaryFile dstFile;
+			QVERIFY(dstFile.open());
+
+			QVERIFY(ResourceLoader::copyFile(srcFile, dstFile));
+
+			QFile readBack(dstFile.fileName());
+			QVERIFY(readBack.open(QIODevice::ReadOnly));
+			QCOMPARE(readBack.size(), largeData.size());
+			QCOMPARE(readBack.readAll(), largeData);
+			readBack.close();
+		}
 	}
 };
 
