@@ -21,6 +21,7 @@
 #include "multipageloader_p.hh"
 #include <QFile>
 #include <QFileInfo>
+#include <QMimeDatabase>
 #include <QNetworkCookie>
 #include <QNetworkDiskCache>
 #include <QTimer>
@@ -482,9 +483,16 @@ void ResourceObject::load() {
 				}
 				postData.append("; filename=\"");
 				postData.append( QFileInfo(pi.value).fileName());
-				postData.append("\"\n\n");
+				postData.append("\"\n");
+				QMimeDatabase db;
+				QString mimeType = db.mimeTypeForFile(pi.value).name();
+				if (!mimeType.isEmpty()) {
+					postData.append("Content-Type: ");
+					postData.append(mimeType);
+					postData.append("\n");
+				}
+				postData.append("\n");
 				postData.append( f.readAll() );
-				//TODO ADD MIME TYPE
 			} else {
 				postData.append("\n\n");
 				postData.append(pi.value);
