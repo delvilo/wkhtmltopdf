@@ -12,23 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: install packages
-        run: sudo apt-get update && sudo apt-get install -y libqt5webkit5-dev libqt5svg5-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake qtbase5-dev libqt5webkit5-dev libqt5svg5-dev
       - name: build
-        run: qmake CONFIG+=silent CONFIG+=shared && make -j2
-      - name: converter regressions
-        env:
-          QT_QPA_PLATFORM: offscreen
-          LD_LIBRARY_PATH: ${{ github.workspace }}/bin
         run: |
-          python3 tests/image_entry_smoke.py --bin-dir bin
-          python3 tests/option_removal_smoke.py --bin-dir bin
-          python3 tests/rendering_backend_smoke.py --bin-dir bin
-      - name: rendering interface regressions
-        env:
-          QT_QPA_PLATFORM: offscreen
-        run: |
-          mkdir -p build/rendering-tests
-          cd build/rendering-tests
-          qmake ../../tests/rendering_interfaces.pro CONFIG+=silent
-          make -j2
-          ./rendering_interfaces
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: regressions
+        run: ctest --test-dir build --output-on-failure

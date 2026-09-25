@@ -30,13 +30,18 @@ For example, on Ubuntu 24.04:
 
 ```sh
 sudo apt-get update
-sudo apt-get install build-essential qt5-qmake qtbase5-dev libqt5webkit5-dev libqt5svg5-dev
-qmake CONFIG+=shared
-make -j2
-export LD_LIBRARY_PATH="$PWD/bin${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-bin/wkhtmltopdf input.html output.pdf
-bin/wkhtmltoimage --format png --transparent input.html output.png
+sudo apt-get install build-essential cmake qtbase5-dev libqt5webkit5-dev libqt5svg5-dev
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel 2
+ctest --test-dir build --output-on-failure
+build/bin/wkhtmltopdf input.html output.pdf
+build/bin/wkhtmltoimage --format png --transparent input.html output.png
 ```
+
+The CMake build creates `libwkhtmltox.so` alongside the executables in
+`build/bin`. To install the library, C headers, tools and manpages, run
+`cmake --install build --prefix /your/install/prefix`. Use
+`-DWKHTMLTOX_VERSION=...` to override the default version shown by the tools.
 
 Use the source build above for this fork. Upstream prebuilt packages use a
 different feature set. The upstream website snapshots under `docs/` are retained

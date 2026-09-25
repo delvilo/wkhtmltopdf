@@ -58,16 +58,9 @@ and factory no longer accept DPI or auxiliary-loader arguments.
 ## Regression checks
 
 ```sh
-export LD_LIBRARY_PATH="$PWD/bin${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-export QT_QPA_PLATFORM=offscreen
-python3 tests/image_entry_smoke.py --bin-dir bin
-python3 tests/option_removal_smoke.py --bin-dir bin
-python3 tests/rendering_backend_smoke.py --bin-dir bin
-mkdir -p build/rendering-tests
-cd build/rendering-tests
-qmake ../../tests/rendering_interfaces.pro
-make
-./rendering_interfaces
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel 2
+ctest --test-dir build --output-on-failure
 ```
 
 The HTTP fixture checks redirects, headers and propagation, cookies and
