@@ -20,8 +20,6 @@
 
 
 #include "converter_p.hh"
-#include "multipageloader.hh"
-#include <QWebFrame>
 #include <qapplication.h>
 
 #ifdef QT4_STATICPLUGIN_TEXTCODECS
@@ -33,29 +31,6 @@ Q_IMPORT_PLUGIN(qtwcodecs)
 #endif
 
 namespace wkhtmltopdf {
-
-
-void ConverterPrivate::updateWebSettings(QWebSettings * ws, const settings::Web & s) const {
-	if (!s.defaultEncoding.isEmpty())
-		ws->setDefaultTextEncoding(s.defaultEncoding);
-#ifdef  __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	if (!s.enableIntelligentShrinking) {
-		ws->setPrintingMaximumShrinkFactor(1.0);
-		ws->setPrintingMinimumShrinkFactor(1.0);
-	}
-#endif
-	ws->setAttribute(QWebSettings::JavaEnabled, false);
-	ws->setAttribute(QWebSettings::JavascriptEnabled, s.enableJavascript);
-	ws->setAttribute(QWebSettings::JavascriptCanOpenWindows, false);
-	ws->setAttribute(QWebSettings::JavascriptCanAccessClipboard, false);
-	ws->setFontSize(QWebSettings::MinimumFontSize, s.minimumFontSize);
-	//Newer versions of QT have even more settings to change
-	ws->setAttribute(QWebSettings::PrintElementBackgrounds, s.background);
-	ws->setAttribute(QWebSettings::AutoLoadImages, s.loadImages);
-	ws->setAttribute(QWebSettings::PluginsEnabled, false);
-	if (!s.userStyleSheet.isEmpty())
-		ws->setUserStyleSheetUrl(MultiPageLoader::guessUrlFromString(s.userStyleSheet));
-}
 
 void ConverterPrivate::fail() {
 	error = true;

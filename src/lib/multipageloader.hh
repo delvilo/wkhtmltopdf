@@ -21,52 +21,26 @@
 #ifndef __MULTIPAGELOADER_HH__
 #define __MULTIPAGELOADER_HH__
 
-#include <QFile>
-#include <QObject>
-#include <QUrl>
-#if QT_VERSION >= 0x050000
-#include <QtWebKitWidgets>
-#else
-#include <QWebPage>
-#endif
-#include <loadsettings.hh>
+#include "resourceloader.hh"
 
 #include <dllbegin.inc>
 namespace wkhtmltopdf {
 
 class DLL_LOCAL MyQWebPage;
 
-class DLL_LOCAL LoaderObject {
-public:
-	QWebPage & page;
-	bool skip;
-
-	LoaderObject(QWebPage & page);
-};
-
 class DLL_LOCAL MultiPageLoaderPrivate;
-class DLL_LOCAL MultiPageLoader: public QObject {
+class DLL_LOCAL MultiPageLoader: public ResourceLoader {
 	Q_OBJECT
 public:
 	MultiPageLoader(settings::LoadGlobal & s, int dpi, bool mainLoader = false);
 	~MultiPageLoader();
 	LoaderObject * addResource(const QString & url, const settings::LoadPage & settings, const QString * data=NULL);
 	LoaderObject * addResource(const QUrl & url, const settings::LoadPage & settings);
-	static QUrl guessUrlFromString(const QString &string);
 	int httpErrorCode();
-	static bool copyFile(QFile & src, QFile & dst);
 public slots:
 	void load();
 	void clearResources();
 	void cancel();
-signals:
-	void loadFinished(bool ok);
-	void loadProgress(int progress);
-	void loadStarted();
-	void debug(QString text);
-	void info(QString text);
-	void warning(QString text);
-	void error(QString text);
 private:
 	MultiPageLoaderPrivate * d;
 	friend class MultiPageLoaderPrivate;

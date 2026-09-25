@@ -22,7 +22,9 @@
 #define __PDFCONVERTER_P_HH__
 
 #include "converter_p.hh"
-#include "multipageloader.hh"
+#include "resourceloader.hh"
+#include "webkitfeatures.hh"
+#include <QScopedPointer>
 #include "outline.hh"
 #include "pdfconverter.hh"
 #include "pdfsettings.hh"
@@ -34,44 +36,40 @@
 #include <QPrinter>
 #include <QRegExp>
 #include <QWaitCondition>
-#include <QWebPage>
 #include <qnetworkreply.h>
-#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-#include <QWebElement>
-#endif
 
 #include "dllbegin.inc"
 namespace wkhtmltopdf {
 
 class DLL_LOCAL PageObject {
 public:
-	static QMap<QWebPage *, PageObject *> webPageToObject;
+	static QMap<RenderPage *, PageObject *> pageToObject;
 
 	settings::PdfObject settings;
 	LoaderObject * loaderObject;
-	QWebPage * page;
+	RenderPage * page;
 	QString data;
 	int number;
 
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	QHash<QString, QWebElement> anchors;
-	QVector< QPair<QWebElement,QString> > localLinks;
-	QVector< QPair<QWebElement,QString> > externalLinks;
+	QHash<QString, DomElement> anchors;
+	QVector< QPair<DomElement,QString> > localLinks;
+	QVector< QPair<DomElement,QString> > externalLinks;
     // height length to reserve for header when printing page
     double headerReserveHeight;
     // height length to reserve for footer when printing page
     double footerReserveHeight;
     // keeps preloaded header to calculate header height
-    QWebPage * measuringHeader;
+    RenderPage * measuringHeader;
     // keeps preloaded footer to calculate header height
-    QWebPage * measuringFooter;
+    RenderPage * measuringFooter;
     // webprinter instance
-    QWebPrinter *web_printer;
+    PagePrinter *web_printer;
 #endif
 
 	int firstPageNumber;
-	QList<QWebPage *> headers;
-	QList<QWebPage *> footers;
+	QList<RenderPage *> headers;
+	QList<RenderPage *> footers;
 	int pageCount;
 	TempFile tocFile;
 
@@ -83,11 +81,14 @@ public:
 		if (web_printer != 0)
 			delete web_printer;
 		web_printer=0;
+		measuringHeader=0;
+		measuringFooter=0;
 #endif
 		headers.clear();
 		footers.clear();
-		webPageToObject.remove(page);
+		pageToObject.remove(page);
  		page=0;
+		loaderObject=0;
 		tocFile.removeAll();
 	}
 
@@ -114,7 +115,7 @@ public:
 
 	settings::PdfGlobal & settings;
 
-	MultiPageLoader pageLoader;
+	QScopedPointer<ResourceLoader> pageLoader;
 
 private:
 	PdfConverter & out;
@@ -139,34 +140,34 @@ private:
 	int objectPage;
 
 
-	QHash<int, QHash<QString, QWebElement> > pageAnchors;
-	QHash<int, QVector< QPair<QWebElement,QString> > > pageLocalLinks;
-	QHash<int, QVector< QPair<QWebElement,QString> > > pageExternalLinks;
+	QHash<int, QHash<QString, DomElement> > pageAnchors;
+	QHash<int, QVector< QPair<DomElement,QString> > > pageLocalLinks;
+	QHash<int, QVector< QPair<DomElement,QString> > > pageExternalLinks;
 	bool pageHasHeaderFooter;
 
     // loader for measuringHeader and measuringFooter
-    MultiPageLoader measuringHFLoader;
+    QScopedPointer<ResourceLoader> measuringHFLoader;
 
-	MultiPageLoader hfLoader;
-	MultiPageLoader tocLoader1;
-	MultiPageLoader tocLoader2;
+	QScopedPointer<ResourceLoader> hfLoader;
+	QScopedPointer<ResourceLoader> tocLoader1;
+	QScopedPointer<ResourceLoader> tocLoader2;
 
-	MultiPageLoader * tocLoader;
-	MultiPageLoader * tocLoaderOld;
+	ResourceLoader * tocLoader;
+	ResourceLoader * tocLoaderOld;
 
 	QHash<QString, PageObject *> urlToPageObj;
 
 	Outline * outline;
-	void findLinks(QWebFrame * frame, QVector<QPair<QWebElement, QString> > & local, QVector<QPair<QWebElement, QString> > & external, QHash<QString, QWebElement> & anchors);
+	void findLinks(RenderPage * page, QVector<QPair<DomElement, QString> > & local, QVector<QPair<DomElement, QString> > & external, QHash<QString, DomElement> & anchors);
 	void endPage(PageObject & object, bool hasHeaderFooter, int objectPage,  int pageNumber);
 	void fillParms(QHash<QString, QString> & parms, int page, const PageObject & object);
 	QString hfreplace(const QString & q, const QHash<QString, QString> & parms);
-	QWebPage * loadHeaderFooter(QString url, const QHash<QString, QString> & parms, const settings::PdfObject & ps);
-    qreal calculateHeaderHeight(QWebPage & header);
+	RenderPage * loadHeaderFooter(QString url, const QHash<QString, QString> & parms, const settings::PdfObject & ps);
+    qreal calculateHeaderHeight(RenderPage & header);
 
 #endif
-	QWebPage * currentHeader;
-	QWebPage * currentFooter;
+	RenderPage * currentHeader;
+	RenderPage * currentFooter;
     QPrinter * createPrinter(const QString & tempFile);
 
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
@@ -174,8 +175,8 @@ private:
 	void preprocessPage(PageObject & obj);
 	void spoolPage(int page);
 	void spoolTo(int page);
-	void handleHeader(QWebPage * frame, int page);
-	void handleFooter(QWebPage * frame, int page);
+	void handleHeader(RenderPage * frame, int page);
+	void handleFooter(RenderPage * frame, int page);
 	void beginPrintObject(PageObject & obj);
 	void endPrintObject(PageObject & obj);
 #endif

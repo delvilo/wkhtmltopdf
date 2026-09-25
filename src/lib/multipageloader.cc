@@ -47,9 +47,6 @@ namespace wkhtmltopdf {
   \brief Defines the MultiPageLoaderPrivate class
 */
 
-
-LoaderObject::LoaderObject(QWebPage & p): page(p), skip(false) {};
-
 MyNetworkAccessManager::MyNetworkAccessManager(const settings::LoadPage & s):
 	disposed(false),
 	settings(s) {
@@ -201,7 +198,8 @@ ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, con
 	signalPrint(false),
 	multiPageLoader(mpl),
 	webPage(*this),
-	lo(webPage),
+	renderPage(webPage),
+	lo(renderPage),
 	httpErrorCode(0),
 	settings(s) {
 
@@ -586,28 +584,6 @@ void MultiPageLoaderPrivate::loadDone() {
 
 
 
-/*!
- * Copy a file from some place to another
- * \param src The source to copy from
- * \param dst The destination to copy to
- */
-bool MultiPageLoader::copyFile(QFile & src, QFile & dst) {
-//      TODO enable again when
-//      http://bugreports.qt.nokia.com/browse/QTBUG-6894
-//      is fixed
-//      QByteArray buf(1024*1024*5,0);
-//      while ( qint64 r=src.read(buf.data(),buf.size())) {
-//          if (r == -1) return false;
-//          if (dst.write(buf.data(),r) != r) return false;
-//      }
-
-    if (dst.write( src.readAll() ) == -1) return false;
-
-	src.close();
-	dst.close();
-	return true;
-}
-
 MultiPageLoaderPrivate::MultiPageLoaderPrivate(const settings::LoadGlobal & s, int dpi_, MultiPageLoader & o):
 	outer(o), settings(s), dpi(dpi_) {
 
@@ -714,69 +690,6 @@ LoaderObject * MultiPageLoader::addResource(const QString & string, const settin
 */
 LoaderObject * MultiPageLoader::addResource(const QUrl & url, const settings::LoadPage & s) {
 	return d->addResource(url, s);
-}
-
-/*!
-  \brief Guess a url, by looking at a string
-
-  (shamelessly copied from Arora Project)
-  \param string The string the is suppose to be some kind of url
-*/
-QUrl MultiPageLoader::guessUrlFromString(const QString &string) {
-	QString urlStr = string.trimmed();
-
-	// check if the string is just a host with a port
-	QRegExp hostWithPort(QLatin1String("^[a-zA-Z\\.]+\\:[0-9]*$"));
-	if (hostWithPort.exactMatch(urlStr))
-		urlStr = QLatin1String("http://") + urlStr;
-
-	// Check if it looks like a qualified URL. Try parsing it and see.
-	QRegExp test(QLatin1String("^[a-zA-Z]+\\://.*"));
-	bool hasSchema = test.exactMatch(urlStr);
-	if (hasSchema) {
-		bool isAscii = true;
-		foreach (const QChar &c, urlStr) {
-			if (c >= 0x80) {
-				isAscii = false;
-				break;
-			}
-		}
-
-		QUrl url;
-		if (isAscii) {
-			url = QUrl::fromEncoded(urlStr.toLatin1(), QUrl::TolerantMode);
-		} else {
-			url = QUrl(urlStr, QUrl::TolerantMode);
-		}
-		if (url.isValid())
-			return url;
-	}
-
-	// Might be a file.
-	if (QFile::exists(urlStr)) {
-		QFileInfo info(urlStr);
-		return QUrl::fromLocalFile(info.absoluteFilePath());
-	}
-
-	// Might be a shorturl - try to detect the schema.
-	if (!hasSchema) {
-		int dotIndex = urlStr.indexOf(QLatin1Char('.'));
-		if (dotIndex != -1) {
-			QString prefix = urlStr.left(dotIndex).toLower();
-			QString schema = (prefix == QLatin1String("ftp")) ? prefix : QLatin1String("http");
-			QUrl url(schema + QLatin1String("://") + urlStr, QUrl::TolerantMode);
-			if (url.isValid())
-				return url;
-		}
-	}
-
-	// Fall back to QUrl's own tolerant parser.
-	QUrl url = QUrl(string, QUrl::TolerantMode);
-
-	// finally for cases where the user just types in a hostname add http
-	if (url.scheme().isEmpty())
-		url = QUrl(QLatin1String("http://") + string, QUrl::TolerantMode);
-	return url;
 }
 
 /*!

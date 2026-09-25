@@ -49,8 +49,8 @@ OutlineItem::~OutlineItem() {
 
 void OutlineItem::fillAnchors(const OutlineItem * other,
 							  int & anchorCounter,
-							  QVector<QPair<QWebElement, QString> > & local,
-							  QHash<QString, QWebElement> & anchors) {
+							  QVector<QPair<DomElement, QString> > & local,
+							  QHash<QString, DomElement> & anchors) {
 	if (!other ||
 		other->children.size() != children.size() ||
 		other->document != document ||
@@ -68,7 +68,7 @@ void OutlineItem::fillAnchors(const OutlineItem * other,
 	if (forwardLinks)
 		anchors[anchor] = element;
 	if (backLinks)
-		local.push_back( QPair<QWebElement, QString>(element, tocAnchor) );
+		local.push_back( QPair<DomElement, QString>(element, tocAnchor) );
 
 	for (int i=0; i < children.size(); ++i)
 		children[i]->fillAnchors(other?other->children[i]:0, anchorCounter, local, anchors);
@@ -102,7 +102,7 @@ OutlinePrivate::~OutlinePrivate() {
 		delete i;
 }
 
-void OutlinePrivate::fillChildAnchors(OutlineItem * item, QHash<QString, QWebElement> & anchors) {
+void OutlinePrivate::fillChildAnchors(OutlineItem * item, QHash<QString, DomElement> & anchors) {
 	foreach (OutlineItem * i, item->children) {
 		if (i->anchor.isEmpty()) continue;
 		anchors[i->anchor] = i->element;
@@ -184,13 +184,13 @@ Outline::~Outline() {delete d;}
 */
 bool Outline::replaceWebPage(int document,
 							 const QString & name,
-							 QWebPrinter & wp,
-							 QWebFrame * frame,
+							 PagePrinter & wp,
+							 DomDocument * frame,
 							 const settings::PdfObject & ps,
-							 QVector<QPair<QWebElement, QString> > & local,
-							 QHash<QString, QWebElement> & anchors) {
-	QMap< QPair<int, QPair<qreal,qreal> >, QWebElement> headings;
-	foreach (const QWebElement & e, frame->findAllElements("h1,h2,h3,h4,h5,h6,h7,h8,h9")) {
+							 QVector<QPair<DomElement, QString> > & local,
+							 QHash<QString, DomElement> & anchors) {
+	QMap< QPair<int, QPair<qreal,qreal> >, DomElement> headings;
+	foreach (const DomElement & e, frame->findAllElements("h1,h2,h3,h4,h5,h6,h7,h8,h9")) {
 		QPair<int, QRectF> location = wp.elementLocation(e);
 		headings[ qMakePair(location.first, qMakePair(location.second.y(), location.second.x()) ) ] = e;
 	}
@@ -208,9 +208,9 @@ bool Outline::replaceWebPage(int document,
 	root->display = true;
 
 	OutlineItem * old = root;
-	for (QMap< QPair<int, QPair<qreal,qreal> >, QWebElement>::iterator i = headings.begin();
+	for (QMap< QPair<int, QPair<qreal,qreal> >, DomElement>::iterator i = headings.begin();
 		i != headings.end(); ++i) {
-		const QWebElement & element = i.value();
+		const DomElement & element = i.value();
 		uint level = element.tagName().mid(1).toInt();
 		QString value = element.toPlainText().replace("\n", " ").trimmed();
 		if (i.key().first == -1 || value == "") continue;
@@ -252,9 +252,9 @@ bool Outline::replaceWebPage(int document,
   \param wp A webprinter for the page
   \param frame The frame containing the webpage
 */
-void Outline::addWebPage(const QString & name, QWebPrinter & wp, QWebFrame * frame, const settings::PdfObject & ps,
-						 QVector<QPair<QWebElement, QString> > & local,
-						 QHash<QString, QWebElement> & anchors) {
+void Outline::addWebPage(const QString & name, PagePrinter & wp, DomDocument * frame, const settings::PdfObject & ps,
+						 QVector<QPair<DomElement, QString> > & local,
+						 QHash<QString, DomElement> & anchors) {
 	Q_UNUSED(name);
 	addEmptyWebPage();
 	replaceWebPage(d->documentOutlines.size()-1, name, wp, frame, ps, local, anchors);
@@ -325,7 +325,7 @@ void Outline::fillHeaderFooterParms(int page, QHash<QString, QString> & parms, c
   \param doc The 0 indexed document number (in order of addWebPage)
   \param anchors The structure to fill
 */
-void Outline::fillAnchors(int doc, QHash<QString, QWebElement> & anchors) {
+void Outline::fillAnchors(int doc, QHash<QString, DomElement> & anchors) {
   if (doc < 0 || doc >= d->documentOutlines.size()) return;
   d->fillChildAnchors( d->documentOutlines[doc], anchors );
 }

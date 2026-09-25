@@ -22,8 +22,8 @@
 #define __OUTLINE_HH__
 
 #include "pdfsettings.hh"
-#include <QWebElement>
-#include <QWebFrame>
+#include "rendering.hh"
+#include "webkitfeatures.hh"
 
 #ifdef  __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
 #include "dllbegin.inc"
@@ -36,11 +36,11 @@ public:
 	Outline(const settings::PdfGlobal & settings);
 	~Outline();
 	void addEmptyWebPage();
-	bool replaceWebPage(int d, const QString & name, QWebPrinter & wp, QWebFrame * f, const settings::PdfObject & ps, QVector<QPair<QWebElement, QString> > & local, QHash<QString, QWebElement> & anchors);
-	void addWebPage(const QString & name, QWebPrinter & wp, QWebFrame * frame, const settings::PdfObject & ps, QVector<QPair<QWebElement, QString> > & local, QHash<QString, QWebElement> & external);
+	bool replaceWebPage(int d, const QString & name, PagePrinter & wp, DomDocument * f, const settings::PdfObject & ps, QVector<QPair<DomElement, QString> > & local, QHash<QString, DomElement> & anchors);
+	void addWebPage(const QString & name, PagePrinter & wp, DomDocument * frame, const settings::PdfObject & ps, QVector<QPair<DomElement, QString> > & local, QHash<QString, DomElement> & external);
 
 	void fillHeaderFooterParms(int page, QHash<QString, QString> & parms, const settings::PdfObject & ps);
-	void fillAnchors(int d, QHash<QString, QWebElement> & anchors);
+	void fillAnchors(int d, QHash<QString, DomElement> & anchors);
 	int pageCount();
 	void printOutline(QPrinter * printer);
 

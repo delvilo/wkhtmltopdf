@@ -16,6 +16,9 @@ before reusing commands or library settings from upstream.
 See [image entry refactoring](docs/image-entry-refactoring.md) for image validation,
 file replacement behavior, and regression checks.
 
+See [WebKit rendering interfaces](docs/rendering-interfaces.md) for the resource
+loading, DOM, page printing and image rendering boundaries and their tests.
+
 ## Building
 wkhtmltopdf has its own dedicated repository for building and packaging.
 
