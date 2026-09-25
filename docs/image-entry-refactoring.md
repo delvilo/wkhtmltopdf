@@ -54,8 +54,8 @@ After building the shared library and both executables, run with the library
 available on the platform's library search path:
 
 ```sh
-python3 tests/image_entry_smoke.py --bin-dir bin
-python3 tests/option_removal_smoke.py --bin-dir bin
+python3 tests/image_entry_smoke.py --bin-dir build/bin
+python3 tests/option_removal_smoke.py --bin-dir build/bin
 ```
 
 The image suite covers startup, validation, format inference, automatic height,

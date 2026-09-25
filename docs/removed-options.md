@@ -98,7 +98,7 @@ parameters were removed from the loader/factory (`dpi`, `mainLoader`), page-prin
 After building the library and both executables, run:
 
 ```sh
-python3 tests/option_removal_smoke.py --bin-dir bin
+python3 tests/option_removal_smoke.py --bin-dir build/bin
 ```
 
 The smoke checks cover rejected options, retained error policies, stdin/stdout
