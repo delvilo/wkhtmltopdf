@@ -86,7 +86,6 @@ struct DLL_PUBLIC LoadPage {
 	QString windowStatus;
 
 	//! What zoom factor should we apply when printing
-	// TODO MOVE
 	float zoomFactor;
 
 	//! Map of custom header variables
