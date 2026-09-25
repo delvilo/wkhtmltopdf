@@ -23,7 +23,8 @@
 
 #include "converter_p.hh"
 #include "imageconverter.hh"
-#include "multipageloader.hh"
+#include "resourceloader.hh"
+#include <QScopedPointer>
 
 #include "dllbegin.inc"
 namespace wkhtmltopdf {
@@ -34,7 +35,7 @@ public:
 	ImageConverterPrivate(ImageConverter & o, wkhtmltopdf::settings::ImageGlobal & s, const QString * data);
 
 	wkhtmltopdf::settings::ImageGlobal settings;
-	MultiPageLoader loader;
+	QScopedPointer<ResourceLoader> loader;
 private:
 	QByteArray outputData;
 	QString inputData;

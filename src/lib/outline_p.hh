@@ -33,7 +33,7 @@ public:
 	uint page;
 	uint document;
 	QString value;
-	QWebElement element;
+	DomElement element;
 	QString anchor;
 	QString tocAnchor;
 	bool display;
@@ -41,8 +41,8 @@ public:
 	bool backLinks;
 	void fillAnchors(const OutlineItem * other,
 					 int & anchorCounter,
-					 QVector<QPair<QWebElement, QString> > & local,
-					 QHash<QString, QWebElement> & anchors);
+					 QVector<QPair<DomElement, QString> > & local,
+					 QHash<QString, DomElement> & anchors);
 	bool differentFrom(const OutlineItem * other) const;
 	OutlineItem();
 	~OutlineItem();
@@ -62,7 +62,7 @@ public:
 	OutlinePrivate(const settings::PdfGlobal & settings);
 	~OutlinePrivate();
 	void buildPrefixSum();
-	void fillChildAnchors(OutlineItem * item, QHash<QString, QWebElement> & anchors);
+	void fillChildAnchors(OutlineItem * item, QHash<QString, DomElement> & anchors);
 	void outlineChildren(OutlineItem * item, QPrinter * printer, int level);
 	void buildHFCache(OutlineItem * i, int level);
 	void dumpChildren(QTextStream & stream, const QList<OutlineItem *> & items, int level) const;

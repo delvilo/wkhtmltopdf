@@ -23,6 +23,8 @@
 
 #include "multipageloader.hh"
 #include "tempfile.hh"
+#include "webkitpage.hh"
+#include <QWebPage>
 #include <QAtomicInt>
 #include <QAuthenticator>
 #include <QFile>
@@ -95,6 +97,7 @@ private:
 public:
 	ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, const settings::LoadPage & s);
 	MyQWebPage webPage;
+	WebKitPage renderPage;
 	LoaderObject lo;
 	int httpErrorCode;
 	const settings::LoadPage settings;

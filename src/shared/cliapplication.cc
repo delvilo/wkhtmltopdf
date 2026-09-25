@@ -20,6 +20,7 @@
 
 #include "cliapplication.hh"
 #include <utilities.hh>
+#include <webkitfeatures.hh>
 
 #include <locale.h>
 #include <stdlib.h>

@@ -22,6 +22,8 @@
 #include "imageconverter_p.hh"
 #include "imagesettings.hh"
 #include "imageoutput.hh"
+#include "renderbackend.hh"
+#include "webkitfeatures.hh"
 #include <climits>
 #include <QBuffer>
 #include <QDebug>
@@ -32,29 +34,26 @@
 #include <QPainter>
 #include <QSvgGenerator>
 #include <QUrl>
-#include <QWebElement>
-#include <QWebFrame>
-#include <QWebPage>
 #include <qapplication.h>
 
 namespace wkhtmltopdf {
 
 ImageConverterPrivate::ImageConverterPrivate(ImageConverter & o, wkhtmltopdf::settings::ImageGlobal & s, const QString * data):
 	settings(s),
-	loader(s.loadGlobal, 96, true),
-	out(o) {
+	loader(createResourceLoader(s.loadGlobal, 96, true)),
+	out(o), loaderObject(0) {
 	if (data) inputData = *data;
 
 	phaseDescriptions.push_back("Loading page");
 	phaseDescriptions.push_back("Rendering");
 	phaseDescriptions.push_back("Done");
 
-	connect(&loader, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
-	connect(&loader, SIGNAL(loadFinished(bool)), this, SLOT(pagesLoaded(bool)));
-	connect(&loader, SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
-	connect(&loader, SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
-	connect(&loader, SIGNAL(info(QString)), this, SLOT(forwardInfo(QString)));
-	connect(&loader, SIGNAL(debug(QString)), this, SLOT(forwardDebug(QString)));
+	connect(loader.data(), SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
+	connect(loader.data(), SIGNAL(loadFinished(bool)), this, SLOT(pagesLoaded(bool)));
+	connect(loader.data(), SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
+	connect(loader.data(), SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
+	connect(loader.data(), SIGNAL(info(QString)), this, SLOT(forwardInfo(QString)));
+	connect(loader.data(), SIGNAL(debug(QString)), this, SLOT(forwardDebug(QString)));
 }
 
 void ImageConverterPrivate::beginConvert() {
@@ -74,19 +73,21 @@ void ImageConverterPrivate::beginConvert() {
 		return;
 	}
 	settings.fmt = settings.outputFormat();
-	loaderObject = loader.addResource(settings.in, settings.loadPage, &inputData);
-	updateWebSettings(loaderObject->page.settings(), settings.web);
-	loader.load();
+	loaderObject = loader->addResource(settings.in, settings.loadPage, &inputData);
+	if (!loaderObject) { fail(); return; }
+	loaderObject->page.applySettings(settings.web);
+	loader->load();
 }
 
 
 void ImageConverterPrivate::clearResources() {
-	loader.clearResources();
+	loaderObject = 0;
+	loader->clearResources();
 }
 
 void ImageConverterPrivate::pagesLoaded(bool ok) {
 	if (conversionDone) return;
-	if (errorCode == 0) errorCode = loader.httpErrorCode();
+	if (errorCode == 0) errorCode = loader->httpErrorCode();
 	if (!ok) {
 		fail();
 		return;
@@ -113,37 +114,37 @@ void ImageConverterPrivate::pagesLoaded(bool ok) {
 }
 
 bool ImageConverterPrivate::renderImage(QString & message) {
-	QWebFrame * frame = loaderObject->page.mainFrame();
-	frame->setScrollBarPolicy(Qt::Vertical, Qt::ScrollBarAlwaysOff);
+	ImageRenderer & renderer = loaderObject->page.image();
+	renderer.setScrollBarPolicy(Qt::Vertical, Qt::ScrollBarAlwaysOff);
 	loadProgress(25);
 
 	// Calculate a viewport wide enough for unbreakable content.
 	int highWidth = settings.screenWidth;
-	loaderObject->page.setViewportSize(QSize(highWidth, 10));
-	if (settings.smartWidth && frame->scrollBarMaximum(Qt::Horizontal) > 0) {
+	renderer.setViewportSize(QSize(highWidth, 10));
+	if (settings.smartWidth && renderer.scrollBarMaximum(Qt::Horizontal) > 0) {
 		if (highWidth < 10) highWidth = 10;
 		int lowWidth = highWidth;
-		while (frame->scrollBarMaximum(Qt::Horizontal) > 0 && highWidth < 32000) {
+		while (renderer.scrollBarMaximum(Qt::Horizontal) > 0 && highWidth < 32000) {
 			lowWidth = highWidth;
 			highWidth *= 2;
-			loaderObject->page.setViewportSize(QSize(highWidth, 10));
+			renderer.setViewportSize(QSize(highWidth, 10));
 		}
 		while (highWidth - lowWidth > 10) {
 			const int width = lowWidth + (highWidth - lowWidth) / 2;
-			loaderObject->page.setViewportSize(QSize(width, 10));
-			if (frame->scrollBarMaximum(Qt::Horizontal) > 0)
+			renderer.setViewportSize(QSize(width, 10));
+			if (renderer.scrollBarMaximum(Qt::Horizontal) > 0)
 				lowWidth = width;
 			else
 				highWidth = width;
 		}
 	}
-	frame->setScrollBarPolicy(Qt::Horizontal, Qt::ScrollBarAlwaysOff);
+	renderer.setScrollBarPolicy(Qt::Horizontal, Qt::ScrollBarAlwaysOff);
 	// Establish the final width before asking WebKit for the automatic height.
-	loaderObject->page.setViewportSize(QSize(highWidth, 10));
-	const int height = settings.screenHeight > 0 ? settings.screenHeight : frame->contentsSize().height();
-	loaderObject->page.setViewportSize(QSize(highWidth, height));
+	renderer.setViewportSize(QSize(highWidth, 10));
+	const int height = settings.screenHeight > 0 ? settings.screenHeight : renderer.contentsSize().height();
+	renderer.setViewportSize(QSize(highWidth, height));
 
-	const QSize viewport = loaderObject->page.viewportSize();
+	const QSize viewport = renderer.viewportSize();
 	const int left = qMax(0, settings.crop.left);
 	const int top = qMax(0, settings.crop.top);
 	if (left >= viewport.width() || top >= viewport.height()) {
@@ -209,17 +210,15 @@ bool ImageConverterPrivate::renderImage(QString & message) {
 		}
 
 		if (settings.transparent && (settings.fmt == "png" || settings.fmt == "svg")) {
-			QWebElement body = frame->findFirstElement("body");
+			DomElement body = loaderObject->page.dom().findFirstElement("body");
 			body.setStyleProperty("background-color", "transparent");
 			body.setStyleProperty("background-image", "none");
-			QPalette palette = loaderObject->page.palette();
-			palette.setBrush(QPalette::Base, Qt::transparent);
-			loaderObject->page.setPalette(palette);
+			renderer.setTransparentBackground();
 		} else {
 			painter.fillRect(QRect(QPoint(0, 0), viewport), Qt::white);
 		}
 		painter.translate(-rect.left(), -rect.top());
-		frame->render(&painter);
+		renderer.render(&painter);
 		if (!painter.end()) {
 			message = "Could not finish rendering the image";
 			return false;

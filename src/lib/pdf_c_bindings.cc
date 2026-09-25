@@ -25,8 +25,8 @@
  */
 #include "pdf_c_bindings_p.hh"
 #include "utilities.hh"
+#include "webkitfeatures.hh"
 #include <QApplication>
-#include <QWebFrame>
 
 #include <QHash>
 

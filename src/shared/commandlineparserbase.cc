@@ -20,7 +20,7 @@
 
 #include "commandlineparserbase.hh"
 #include "outputter.hh"
-#include <qwebframe.h>
+#include <webkitfeatures.hh>
 
 bool ahsort(const ArgHandler * a, const ArgHandler * b) {
 	QRegExp e("^(no|enable|disable|include-in|exclude-from)-");

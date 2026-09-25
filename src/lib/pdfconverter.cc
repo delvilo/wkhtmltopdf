@@ -20,6 +20,7 @@
 
 
 #include "pdfconverter_p.hh"
+#include "renderbackend.hh"
 #include <QAuthenticator>
 #include <QDateTime>
 #include <QDir>
@@ -27,9 +28,6 @@
 #include <QPair>
 #include <QPrintEngine>
 #include <QTimer>
-#include <QWebFrame>
-#include <QWebPage>
-#include <QWebSettings>
 #include <QXmlQuery>
 #include <algorithm>
 #include <qapplication.h>
@@ -44,7 +42,7 @@ using namespace wkhtmltopdf::settings;
 
 const qreal PdfConverter::millimeterToPointMultiplier = 3.779527559;
 
-DLL_LOCAL QMap<QWebPage *, PageObject *> PageObject::webPageToObject;
+DLL_LOCAL QMap<RenderPage *, PageObject *> PageObject::pageToObject;
 
 struct DLL_LOCAL StreamDumper {
 	QFile out;
@@ -72,11 +70,11 @@ bool DLL_LOCAL looksLikeHtmlAndNotAUrl(QString str) {
 }
 
 PdfConverterPrivate::PdfConverterPrivate(PdfGlobal & s, PdfConverter & o) :
-	settings(s), pageLoader(s.load, settings.dpi, true),
+	settings(s), pageLoader(createResourceLoader(s.load, settings.dpi, true)),
 	out(o), printer(0), painter(0)
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	, measuringHFLoader(s.load, settings.dpi), hfLoader(s.load, settings.dpi), tocLoader1(s.load, settings.dpi), tocLoader2(s.load, settings.dpi)
-	, tocLoader(&tocLoader1), tocLoaderOld(&tocLoader2)
+	, measuringHFLoader(createResourceLoader(s.load, settings.dpi)), hfLoader(createResourceLoader(s.load, settings.dpi)), tocLoader1(createResourceLoader(s.load, settings.dpi)), tocLoader2(createResourceLoader(s.load, settings.dpi))
+	, tocLoader(tocLoader1.data()), tocLoaderOld(tocLoader2.data())
     , outline(0), currentHeader(0), currentFooter(0)
 #endif
 {
@@ -93,41 +91,41 @@ PdfConverterPrivate::PdfConverterPrivate(PdfGlobal & s, PdfConverter & o) :
 	phaseDescriptions.push_back("Printing pages");
 	phaseDescriptions.push_back("Done");
 
-	connect(&pageLoader, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
-	connect(&pageLoader, SIGNAL(loadFinished(bool)), this, SLOT(pagesLoaded(bool)));
-	connect(&pageLoader, SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
-	connect(&pageLoader, SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
-	connect(&pageLoader, SIGNAL(info(QString)), this, SLOT(forwardInfo(QString)));
-	connect(&pageLoader, SIGNAL(debug(QString)), this, SLOT(forwardDebug(QString)));
+	connect(pageLoader.data(), SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
+	connect(pageLoader.data(), SIGNAL(loadFinished(bool)), this, SLOT(pagesLoaded(bool)));
+	connect(pageLoader.data(), SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
+	connect(pageLoader.data(), SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
+	connect(pageLoader.data(), SIGNAL(info(QString)), this, SLOT(forwardInfo(QString)));
+	connect(pageLoader.data(), SIGNAL(debug(QString)), this, SLOT(forwardDebug(QString)));
 
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-    connect(&measuringHFLoader, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
-    connect(&measuringHFLoader, SIGNAL(loadFinished(bool)), this, SLOT(measuringHeadersLoaded(bool)));
-    connect(&measuringHFLoader, SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
-    connect(&measuringHFLoader, SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
-    connect(&measuringHFLoader, SIGNAL(info(QString)), this, SLOT(forwardInfo(QString)));
-    connect(&measuringHFLoader, SIGNAL(debug(QString)), this, SLOT(forwardDebug(QString)));
+    connect(measuringHFLoader.data(), SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
+    connect(measuringHFLoader.data(), SIGNAL(loadFinished(bool)), this, SLOT(measuringHeadersLoaded(bool)));
+    connect(measuringHFLoader.data(), SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
+    connect(measuringHFLoader.data(), SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
+    connect(measuringHFLoader.data(), SIGNAL(info(QString)), this, SLOT(forwardInfo(QString)));
+    connect(measuringHFLoader.data(), SIGNAL(debug(QString)), this, SLOT(forwardDebug(QString)));
 
-    connect(&hfLoader, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
-	connect(&hfLoader, SIGNAL(loadFinished(bool)), this, SLOT(headersLoaded(bool)));
-	connect(&hfLoader, SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
-	connect(&hfLoader, SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
-	connect(&hfLoader, SIGNAL(info(QString)), this, SLOT(forwardInfo(QString)));
-	connect(&hfLoader, SIGNAL(debug(QString)), this, SLOT(forwardDebug(QString)));
+    connect(hfLoader.data(), SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
+	connect(hfLoader.data(), SIGNAL(loadFinished(bool)), this, SLOT(headersLoaded(bool)));
+	connect(hfLoader.data(), SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
+	connect(hfLoader.data(), SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
+	connect(hfLoader.data(), SIGNAL(info(QString)), this, SLOT(forwardInfo(QString)));
+	connect(hfLoader.data(), SIGNAL(debug(QString)), this, SLOT(forwardDebug(QString)));
 
-    connect(&tocLoader1, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
-	connect(&tocLoader1, SIGNAL(loadFinished(bool)), this, SLOT(tocLoaded(bool)));
-	connect(&tocLoader1, SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
-	connect(&tocLoader1, SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
-	connect(&tocLoader1, SIGNAL(info(QString)), this, SLOT(forwardInfo(QString)));
-	connect(&tocLoader1, SIGNAL(debug(QString)), this, SLOT(forwardDebug(QString)));
+    connect(tocLoader1.data(), SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
+	connect(tocLoader1.data(), SIGNAL(loadFinished(bool)), this, SLOT(tocLoaded(bool)));
+	connect(tocLoader1.data(), SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
+	connect(tocLoader1.data(), SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
+	connect(tocLoader1.data(), SIGNAL(info(QString)), this, SLOT(forwardInfo(QString)));
+	connect(tocLoader1.data(), SIGNAL(debug(QString)), this, SLOT(forwardDebug(QString)));
 
-	connect(&tocLoader2, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
-	connect(&tocLoader2, SIGNAL(loadFinished(bool)), this, SLOT(tocLoaded(bool)));
-	connect(&tocLoader2, SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
-	connect(&tocLoader2, SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
-	connect(&tocLoader2, SIGNAL(info(QString)), this, SLOT(forwardInfo(QString)));
-	connect(&tocLoader2, SIGNAL(debug(QString)), this, SLOT(forwardDebug(QString)));
+	connect(tocLoader2.data(), SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
+	connect(tocLoader2.data(), SIGNAL(loadFinished(bool)), this, SLOT(tocLoaded(bool)));
+	connect(tocLoader2.data(), SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
+	connect(tocLoader2.data(), SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
+	connect(tocLoader2.data(), SIGNAL(info(QString)), this, SLOT(forwardInfo(QString)));
+	connect(tocLoader2.data(), SIGNAL(debug(QString)), this, SLOT(forwardDebug(QString)));
 #endif
 
 	if ( ! settings.viewportSize.isEmpty())
@@ -175,8 +173,8 @@ void PdfConverterPrivate::beginConvert() {
             // we should auto calculate header if top margin is not specified
             if (settings.margin.top.first == -1) {
                 headerHeightsCalcNeeded = true;
-                o.measuringHeader = &measuringHFLoader.addResource(
-                    MultiPageLoader::guessUrlFromString(s.header.htmlUrl), s.load)->page;
+                o.measuringHeader = &measuringHFLoader->addResource(
+                    ResourceLoader::guessUrlFromString(s.header.htmlUrl), s.load)->page;
             } else {
                 // or just set static values
                 // add spacing to prevent moving header out of page
@@ -194,8 +192,8 @@ void PdfConverterPrivate::beginConvert() {
             if (settings.margin.bottom.first == -1) {
                 // we should auto calculate footer if top margin is not specified
                 headerHeightsCalcNeeded = true;
-                o.measuringFooter = &measuringHFLoader.addResource(
-                    MultiPageLoader::guessUrlFromString(s.footer.htmlUrl), s.load)->page;
+                o.measuringFooter = &measuringHFLoader->addResource(
+                    ResourceLoader::guessUrlFromString(s.footer.htmlUrl), s.load)->page;
             } else {
                 // or just set static values
                 // add spacing to prevent moving footer out of page
@@ -205,10 +203,11 @@ void PdfConverterPrivate::beginConvert() {
 #endif
 
 		if (!s.isTableOfContent) {
-			o.loaderObject = pageLoader.addResource(s.page, s.load, &o.data);
+			o.loaderObject = pageLoader->addResource(s.page, s.load, &o.data);
+			if (!o.loaderObject) { fail(); return; }
 			o.page = &o.loaderObject->page;
-			PageObject::webPageToObject[o.page] = &o;
-			updateWebSettings(o.page->settings(), s.web);
+			PageObject::pageToObject[o.page] = &o;
+			o.page->applySettings(s.web);
 		}
 	}
 
@@ -218,7 +217,7 @@ void PdfConverterPrivate::beginConvert() {
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
     if (headerHeightsCalcNeeded) {
         // preload header/footer to check their heights
-        measuringHFLoader.load();
+        measuringHFLoader->load();
     } else {
         // set defaults if top or bottom mergin is not specified
         if (settings.margin.top.first == -1) {
@@ -234,34 +233,31 @@ void PdfConverterPrivate::beginConvert() {
             o.footerReserveHeight = settings.margin.bottom.first;
         }
 
-        pageLoader.load();
+        pageLoader->load();
     }
 #else
-    pageLoader.load();
+    pageLoader->load();
 #endif
 }
 
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
 // calculates header/footer height
 // returns millimeters
-qreal PdfConverterPrivate::calculateHeaderHeight(QWebPage & header) {
+qreal PdfConverterPrivate::calculateHeaderHeight(RenderPage & header) {
 
     TempFile   tempObj;
     QString    tempFile = tempObj.create(".pdf");
 
-    QPainter * testPainter = new QPainter();
-    QPrinter * testPrinter = createPrinter(tempFile);
+    QScopedPointer<QPrinter> testPrinter(createPrinter(tempFile));
+    QPainter testPainter;
 
-    if (!testPainter->begin(testPrinter)) {
+    if (!testPainter.begin(testPrinter.data())) {
         emit out.error("Unable to write to temp location");
         return 0.0;
     }
 
-    QWebPrinter wp(header.mainFrame(), testPrinter, *testPainter);
-    qreal height = wp.elementLocation(header.mainFrame()->findFirstElement("body")).second.height();
-
-    delete testPainter;
-    delete testPrinter;
+    QScopedPointer<PagePrinter> wp(header.createPrinter(testPrinter.data(), &testPainter));
+    qreal height = wp->elementLocation(header.dom().findFirstElement("body")).second.height();
 
     return (height / PdfConverter::millimeterToPointMultiplier);
 }
@@ -307,18 +303,18 @@ void PdfConverterPrivate::preprocessPage(PageObject & obj) {
 	painter->save();
 
 	if (viewportSize.isValid() && ! viewportSize.isEmpty()) {
-		obj.page->setViewportSize(viewportSize);
-		obj.page->mainFrame()->setScrollBarPolicy(Qt::Vertical,Qt::ScrollBarAlwaysOff);
-		obj.page->mainFrame()->setScrollBarPolicy(Qt::Horizontal,Qt::ScrollBarAlwaysOff);
+		obj.page->image().setViewportSize(viewportSize);
+		obj.page->image().setScrollBarPolicy(Qt::Vertical,Qt::ScrollBarAlwaysOff);
+		obj.page->image().setScrollBarPolicy(Qt::Horizontal,Qt::ScrollBarAlwaysOff);
 	}
 
 
-	obj.web_printer = new QWebPrinter(obj.page->mainFrame(), printer, *painter);
+	obj.web_printer = obj.page->createPrinter(printer, painter);
 	obj.pageCount = obj.settings.pagesCount? obj.web_printer->pageCount(): 0;
 	pageCount += obj.pageCount;
 
 	if (obj.settings.includeInOutline)
-		outline->addWebPage(obj.page->mainFrame()->title(), *obj.web_printer, obj.page->mainFrame(),
+		outline->addWebPage(obj.page->dom().title(), *obj.web_printer, &obj.page->dom(),
 							obj.settings, obj.localLinks, obj.anchors);
 	else
 		outline->addEmptyWebPage();
@@ -330,7 +326,7 @@ void PdfConverterPrivate::preprocessPage(PageObject & obj) {
  * Prepares printing out the document to the pdf file
  */
 void PdfConverterPrivate::pagesLoaded(bool ok) {
-	if (errorCode == 0) errorCode = pageLoader.httpErrorCode();
+	if (errorCode == 0) errorCode = pageLoader->httpErrorCode();
 	if (!ok) {
 		fail();
 		return;
@@ -410,7 +406,7 @@ void PdfConverterPrivate::pagesLoaded(bool ok) {
 		if (title != "") break;
 		if (!objects[d].loaderObject || objects[d].loaderObject->skip ||
 			objects[d].settings.isTableOfContent) continue;
-		title = objects[d].page->mainFrame()->title();
+		title = objects[d].page->dom().title();
 	}
 	printer->setDocName(title);
 	if (!painter->begin(printer)) {
@@ -465,7 +461,7 @@ void PdfConverterPrivate::loadHeaders() {
 		}
 	}
 	if (hf)
-		hfLoader.load();
+		hfLoader->load();
 	else
 		printDocument();
 #endif
@@ -520,9 +516,10 @@ void PdfConverterPrivate::loadTocs() {
 		query.evaluateTo(&htmlFile);
 
 		obj.loaderObject = tocLoader->addResource(htmlPath, ps.load);
+		if (!obj.loaderObject) { fail(); return; }
 		obj.page = &obj.loaderObject->page;
-		PageObject::webPageToObject[obj.page] = &obj;
-		updateWebSettings(obj.page->settings(), ps.web);
+		PageObject::pageToObject[obj.page] = &obj;
+		obj.page->applySettings(ps.web);
 		toc= true;
 	}
 
@@ -538,14 +535,14 @@ void PdfConverterPrivate::loadTocs() {
 }
 
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-void PdfConverterPrivate::findLinks(QWebFrame * frame, QVector<QPair<QWebElement, QString> > & local, QVector<QPair<QWebElement, QString> > & external, QHash<QString, QWebElement> & anchors) {
+void PdfConverterPrivate::findLinks(RenderPage * page, QVector<QPair<DomElement, QString> > & local, QVector<QPair<DomElement, QString> > & external, QHash<QString, DomElement> & anchors) {
 	bool ulocal=true, uexternal=true;
-	if (PageObject::webPageToObject.contains(frame->page())) {
-		ulocal = PageObject::webPageToObject[frame->page()]->settings.useLocalLinks;
-		uexternal  = PageObject::webPageToObject[frame->page()]->settings.useExternalLinks;
+	if (PageObject::pageToObject.contains(page)) {
+		ulocal = PageObject::pageToObject[page]->settings.useLocalLinks;
+		uexternal  = PageObject::pageToObject[page]->settings.useExternalLinks;
 	}
 	if (!ulocal && !uexternal) return;
-	foreach (const QWebElement & elm, frame->findAllElements("a")) {
+	foreach (const DomElement & elm, page->dom().findAllElements("a")) {
 		QString n=elm.attribute("name");
 		if (n.isEmpty()) n=elm.attribute("ns0:name");
 		if (n.startsWith("__WKANCHOR_")) anchors[n] = elm;
@@ -557,20 +554,20 @@ void PdfConverterPrivate::findLinks(QWebFrame * frame, QVector<QPair<QWebElement
 		} else {
 			QUrl href(h);
 			if (href.isEmpty()) continue;
-			href=frame->baseUrl().resolved(href);
+			href=page->dom().baseUrl().resolved(href);
 			QString key = QUrl::fromPercentEncoding(href.toString(QUrl::RemoveFragment).toLocal8Bit());
 			if (urlToPageObj.contains(key)) {
 				if (ulocal) {
 					PageObject * p = urlToPageObj[key];
-					QWebElement e;
+					DomElement e;
 					if (!href.hasFragment())
-						e = p->page->mainFrame()->findFirstElement("body");
+						e = p->page->dom().findFirstElement("body");
 					else {
-						e = p->page->mainFrame()->findFirstElement("a[name=\""+href.fragment()+"\"]");
+						e = p->page->dom().findFirstElement("a[name=\""+href.fragment()+"\"]");
 						if (e.isNull())
-							e = p->page->mainFrame()->findFirstElement("*[id=\""+href.fragment()+"\"]");
+							e = p->page->dom().findFirstElement("*[id=\""+href.fragment()+"\"]");
 						if (e.isNull())
-							e = p->page->mainFrame()->findFirstElement("*[name=\""+href.fragment()+"\"]");
+							e = p->page->dom().findFirstElement("*[name=\""+href.fragment()+"\"]");
 					}
 					if (!e.isNull()) {
 						p->anchors[href.toString()] = e;
@@ -587,7 +584,7 @@ void PdfConverterPrivate::findLinks(QWebFrame * frame, QVector<QPair<QWebElement
 void PdfConverterPrivate::fillParms(QHash<QString, QString> & parms, int page, const PageObject & object) {
 	outline->fillHeaderFooterParms(page, parms, object.settings);
 	parms["doctitle"] = title;
-	parms["title"] = object.page?object.page->mainFrame()->title():"";
+	parms["title"] = object.page?object.page->dom().title():"";
 	QDateTime t(QDateTime::currentDateTime());
 	parms["time"] = t.time().toString(Qt::SystemLocaleShortDate);
 	parms["date"] = t.date().toString(Qt::SystemLocaleShortDate);
@@ -596,7 +593,7 @@ void PdfConverterPrivate::fillParms(QHash<QString, QString> & parms, int page, c
 
 
 void PdfConverterPrivate::endPage(PageObject & object, bool hasHeaderFooter, int objectPage, int pageNumber) {
-	typedef QPair<QWebElement, QString> p_t;
+	typedef QPair<DomElement, QString> p_t;
 	settings::PdfObject & s = object.settings;
     // save margin values
     qreal leftMargin, topMargin, rightMargin, bottomMargin;
@@ -646,65 +643,61 @@ void PdfConverterPrivate::endPage(PageObject & object, bool hasHeaderFooter, int
 	//if (!object.headers.empty()) {
 	//object.headers[objectPage];
 	if (currentHeader) {
-		QWebPage * header = currentHeader;
-		updateWebSettings(header->settings(), object.settings.web);
+		RenderPage * header = currentHeader;
+		header->applySettings(object.settings.web);
 		painter->save();
 		painter->resetTransform();
-		QPalette pal = header->palette();
-		pal.setBrush(QPalette::Base, Qt::transparent);
-		header->setPalette(pal);
+		header->image().setTransparentBackground();
 		double spacing = s.header.spacing * printer->height() / printer->heightMM();
         // clear vertical margins for proper header rendering
         printer->setPageMargins(leftMargin, 0, rightMargin, 0, settings.margin.left.second);
 		painter->translate(0, -spacing);
-		QWebPrinter wp(header->mainFrame(), printer, *painter);
-		painter->translate(0,-wp.elementLocation(header->mainFrame()->findFirstElement("body")).second.height());
+		QScopedPointer<PagePrinter> wp(header->createPrinter(printer, painter));
+		painter->translate(0,-wp->elementLocation(header->dom().findFirstElement("body")).second.height());
 		QVector<p_t> local;
 		QVector<p_t> external;
-		QHash<QString, QWebElement> anchors;
-		findLinks(header->mainFrame(), local, external, anchors);
+		QHash<QString, DomElement> anchors;
+		findLinks(header, local, external, anchors);
 		foreach (const p_t & p, local) {
-			QRectF r = wp.elementLocation(p.first).second;
+			QRectF r = wp->elementLocation(p.first).second;
 			painter->addLink(r, p.second);
 		}
 		foreach (const p_t & p, external) {
-			QRectF r = wp.elementLocation(p.first).second;
+			QRectF r = wp->elementLocation(p.first).second;
 			painter->addHyperlink(r, QUrl(p.second));
 		}
-		wp.spoolPage(1);
+		wp->spoolPage(1);
         // restore margins
         printer->setPageMargins(leftMargin, topMargin, rightMargin, bottomMargin, settings.margin.left.second);
 		painter->restore();
 	}
 
 	if (currentFooter) {
-		QWebPage * footer=currentFooter;
-		updateWebSettings(footer->settings(), object.settings.web);
+		RenderPage * footer=currentFooter;
+		footer->applySettings(object.settings.web);
 		painter->save();
 		painter->resetTransform();
-		QPalette pal = footer->palette();
-		pal.setBrush(QPalette::Base, Qt::transparent);
-		footer->setPalette(pal);
+		footer->image().setTransparentBackground();
 		double spacing = s.footer.spacing * printer->height() / printer->heightMM();
 		painter->translate(0, printer->height()+ spacing);
         // clear vertical margins for proper header rendering
         printer->setPageMargins(leftMargin, 0, rightMargin, 0, settings.margin.left.second);
 
-		QWebPrinter wp(footer->mainFrame(), printer, *painter);
+		QScopedPointer<PagePrinter> wp(footer->createPrinter(printer, painter));
 
 		QVector<p_t> local;
 		QVector<p_t> external;
-		QHash<QString, QWebElement> anchors;
-		findLinks(footer->mainFrame(), local, external, anchors);
+		QHash<QString, DomElement> anchors;
+		findLinks(footer, local, external, anchors);
 		foreach (const p_t & p, local) {
-			QRectF r = wp.elementLocation(p.first).second;
+			QRectF r = wp->elementLocation(p.first).second;
 			painter->addLink(r, p.second);
 		}
 		foreach (const p_t & p, external) {
-			QRectF r = wp.elementLocation(p.first).second;
+			QRectF r = wp->elementLocation(p.first).second;
 			painter->addHyperlink(r, QUrl(p.second));
 		}
-		wp.spoolPage(1);
+		wp->spoolPage(1);
         // restore margins
         printer->setPageMargins(leftMargin, topMargin, rightMargin, bottomMargin, settings.margin.left.second);
 		painter->restore();
@@ -714,14 +707,14 @@ void PdfConverterPrivate::endPage(PageObject & object, bool hasHeaderFooter, int
 
 void PdfConverterPrivate::handleTocPage(PageObject & obj) {
 	painter->save();
-	QWebPrinter wp(obj.page->mainFrame(), printer, *painter);
-	int pc = obj.settings.pagesCount? wp.pageCount(): 0;
+	QScopedPointer<PagePrinter> wp(obj.page->createPrinter(printer, painter));
+	int pc = obj.settings.pagesCount? wp->pageCount(): 0;
 	if (pc != obj.pageCount) {
 		obj.pageCount = pc;
 		tocChanged=true;
 	}
 	pageCount += obj.pageCount;
-	tocChanged = outline->replaceWebPage(obj.number, obj.settings.toc.captionText, wp, obj.page->mainFrame(), obj.settings, obj.localLinks, obj.anchors) || tocChanged;
+	tocChanged = outline->replaceWebPage(obj.number, obj.settings.toc.captionText, *wp, &obj.page->dom(), obj.settings, obj.localLinks, obj.anchors) || tocChanged;
 	painter->restore();
 }
 #endif
@@ -761,14 +754,14 @@ void PdfConverterPrivate::tocLoaded(bool ok) {
 		for (int d=0; d < objects.size(); ++d) {
 			if (!objects[d].loaderObject || objects[d].loaderObject->skip) continue;
 			if (objects[d].settings.isTableOfContent) continue;
-			urlToPageObj[ QUrl::fromPercentEncoding(objects[d].page->mainFrame()->url().toString(QUrl::RemoveFragment).toLocal8Bit()) ] = &objects[d];
+			urlToPageObj[ QUrl::fromPercentEncoding(objects[d].page->dom().url().toString(QUrl::RemoveFragment).toLocal8Bit()) ] = &objects[d];
 		}
 
 		for (int d=0; d < objects.size(); ++d) {
 			if (!objects[d].loaderObject || objects[d].loaderObject->skip) continue;
 			progressString = QString("Object ")+QString::number(d+1)+QString(" of ")+QString::number(objects.size());
 			emit out.progressChanged((d+1)*100 / objects.size());
-			findLinks(objects[d].page->mainFrame(), objects[d].localLinks, objects[d].externalLinks, objects[d].anchors );
+			findLinks(objects[d].page, objects[d].localLinks, objects[d].externalLinks, objects[d].anchors );
 		}
 
 		loadHeaders();
@@ -779,7 +772,7 @@ void PdfConverterPrivate::tocLoaded(bool ok) {
 
 void PdfConverterPrivate::measuringHeadersLoaded(bool ok) {
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-    if (errorCode == 0) errorCode = measuringHFLoader.httpErrorCode();
+    if (errorCode == 0) errorCode = measuringHFLoader->httpErrorCode();
 #endif
     if (!ok) {
         fail();
@@ -801,12 +794,12 @@ void PdfConverterPrivate::measuringHeadersLoaded(bool ok) {
     }
 #endif
 
-    pageLoader.load();
+    pageLoader->load();
 }
 
 void PdfConverterPrivate::headersLoaded(bool ok) {
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	if (errorCode == 0) errorCode = hfLoader.httpErrorCode();
+	if (errorCode == 0) errorCode = hfLoader->httpErrorCode();
 #endif
 	if (!ok) {
 		fail();
@@ -823,19 +816,19 @@ void PdfConverterPrivate::spoolPage(int page) {
 	if (actualPage != 1)
 		printer->newPage();
 
-	QWebPrinter *webPrinter = objects[currentObject].web_printer;
+	PagePrinter *webPrinter = objects[currentObject].web_printer;
 	webPrinter->spoolPage(page+1);
-	for (QHash<QString, QWebElement>::iterator i=pageAnchors[page+1].begin();
+	for (QHash<QString, DomElement>::iterator i=pageAnchors[page+1].begin();
 		 i != pageAnchors[page+1].end(); ++i) {
 		QRectF r = webPrinter->elementLocation(i.value()).second;
 		painter->addAnchor(r, i.key());
 	}
-	for (QVector< QPair<QWebElement,QString> >::iterator i=pageLocalLinks[page+1].begin();
+	for (QVector< QPair<DomElement,QString> >::iterator i=pageLocalLinks[page+1].begin();
 		 i != pageLocalLinks[page+1].end(); ++i) {
 		QRectF r = webPrinter->elementLocation(i->first).second;
 		painter->addLink(r, i->second);
 	}
-	for (QVector< QPair<QWebElement,QString> >::iterator i=pageExternalLinks[page+1].begin();
+	for (QVector< QPair<DomElement,QString> >::iterator i=pageExternalLinks[page+1].begin();
 		 i != pageExternalLinks[page+1].end(); ++i) {
 		QRectF r = webPrinter->elementLocation(i->first).second;
 		painter->addHyperlink(r, QUrl(i->second));
@@ -865,14 +858,12 @@ void PdfConverterPrivate::beginPrintObject(PageObject & obj) {
 	if (!obj.loaderObject || obj.loaderObject->skip)
 		return;
 
-	QWebPrinter *webPrinter = objects[currentObject].web_printer;
+	PagePrinter *webPrinter = objects[currentObject].web_printer;
 	if (webPrinter == 0)
 		webPrinter = objects[currentObject].web_printer = \
-			new QWebPrinter(obj.page->mainFrame(), printer, *painter);
+			obj.page->createPrinter(printer, painter);
 
-	QPalette pal = obj.loaderObject->page.palette();
-	pal.setBrush(QPalette::Base, Qt::transparent);
-	obj.loaderObject->page.setPalette(pal);
+	obj.loaderObject->page.image().setTransparentBackground();
 
 	const settings::PdfObject & ps = obj.settings;
 	pageHasHeaderFooter = ps.header.line || ps.footer.line ||
@@ -884,15 +875,15 @@ void PdfConverterPrivate::beginPrintObject(PageObject & obj) {
 	outline->fillAnchors(obj.number, obj.anchors);
 
 	//Sort anchors and links by page
-	for (QHash<QString, QWebElement>::iterator i=obj.anchors.begin();
+	for (QHash<QString, DomElement>::iterator i=obj.anchors.begin();
 		 i != obj.anchors.end(); ++i)
 		pageAnchors[webPrinter->elementLocation(i.value()).first][i.key()] = i.value();
 
-	for (QVector< QPair<QWebElement,QString> >::iterator i=obj.localLinks.begin();
+	for (QVector< QPair<DomElement,QString> >::iterator i=obj.localLinks.begin();
 		 i != obj.localLinks.end(); ++i)
 		pageLocalLinks[webPrinter->elementLocation(i->first).first].push_back(*i);
 
-	for (QVector< QPair<QWebElement,QString> >::iterator i=obj.externalLinks.begin();
+	for (QVector< QPair<DomElement,QString> >::iterator i=obj.externalLinks.begin();
 		 i != obj.externalLinks.end(); ++i)
 		pageExternalLinks[webPrinter->elementLocation(i->first).first].push_back(*i);
 
@@ -900,12 +891,12 @@ void PdfConverterPrivate::beginPrintObject(PageObject & obj) {
 }
 
 
-void PdfConverterPrivate::handleHeader(QWebPage * frame, int page) {
+void PdfConverterPrivate::handleHeader(RenderPage * frame, int page) {
 	spoolTo(page);
 	currentHeader = frame;
 }
 
-void PdfConverterPrivate::handleFooter(QWebPage * frame, int page) {
+void PdfConverterPrivate::handleFooter(RenderPage * frame, int page) {
 	spoolTo(page);
 	currentFooter = frame;
 }
@@ -935,7 +926,10 @@ void PdfConverterPrivate::printDocument() {
 #ifndef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
 	currentPhase = 1;
 	emit out.phaseChanged();
-	objects[0].page->mainFrame()->print(printer);
+	{
+		QScopedPointer<PagePrinter> document(objects[0].page->createPrinter(printer));
+		document->printDocument();
+	}
 	progressString = "";
 	emit out.progressChanged(-1);
 #else
@@ -973,7 +967,7 @@ void PdfConverterPrivate::printDocument() {
 		QFile o;
 		if ( !i.open(QIODevice::ReadOnly) ||
 			!o.open(stdout,QIODevice::WriteOnly) ||
-			!MultiPageLoader::copyFile(i,o) ) {
+			!ResourceLoader::copyFile(i,o) ) {
 			emit out.error("Count not write to stdout");
 			tempOut.removeAll();
 			fail();
@@ -1007,11 +1001,11 @@ void PdfConverterPrivate::printDocument() {
 }
 
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-QWebPage * PdfConverterPrivate::loadHeaderFooter(QString url, const QHash<QString, QString> & parms, const settings::PdfObject & ps) {
-	QUrl u = MultiPageLoader::guessUrlFromString(url);
+RenderPage * PdfConverterPrivate::loadHeaderFooter(QString url, const QHash<QString, QString> & parms, const settings::PdfObject & ps) {
+	QUrl u = ResourceLoader::guessUrlFromString(url);
 	for (QHash<QString, QString>::const_iterator i=parms.begin(); i != parms.end(); ++i)
 		u.addQueryItem(i.key(), i.value());
-	return &hfLoader.addResource(u, ps.load)->page;
+	return &hfLoader->addResource(u, ps.load)->page;
 
 }
 
@@ -1029,29 +1023,37 @@ QString PdfConverterPrivate::hfreplace(const QString & q, const QHash<QString, Q
 
 void PdfConverterPrivate::clearResources() {
 	objects.clear();
-	pageLoader.clearResources();
 #ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
-	hfLoader.clearResources();
-	tocLoader1.clearResources();
-	tocLoader2.clearResources();
-
+	// Release DOM handles and page printers before invalidating their pages.
+	pageAnchors.clear();
+	pageLocalLinks.clear();
+	pageExternalLinks.clear();
+	urlToPageObj.clear();
+	currentHeader = 0;
+	currentFooter = 0;
 	if (outline) {
 		Outline * tmp = outline;
 		outline = 0;
 		delete tmp;
 	}
-
+#endif
+	pageLoader->clearResources();
+#ifdef __EXTENSIVE_WKHTMLTOPDF_QT_HACK__
+	measuringHFLoader->clearResources();
+	hfLoader->clearResources();
+	tocLoader1->clearResources();
+	tocLoader2->clearResources();
 #endif
 
-	if (printer) {
-		QPrinter * tmp = printer;
-		printer = 0;
-		delete tmp;
-	}
-
+	// An active painter must release its paint device before it is destroyed.
 	if (painter) {
 		QPainter * tmp = painter;
 		painter = 0;
+		delete tmp;
+	}
+	if (printer) {
+		QPrinter * tmp = printer;
+		printer = 0;
 		delete tmp;
 	}
 }

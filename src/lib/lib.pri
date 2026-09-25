@@ -18,6 +18,8 @@
 DEFINES += BUILDING_DLL
 
 #Shared
+HEADERS += ../lib/rendering.hh ../lib/resourceloader.hh ../lib/renderbackend.hh ../lib/webkitpage.hh ../lib/webkitfeatures.hh
+SOURCES += ../lib/resourceloader.cc ../lib/renderbackend.cc ../lib/webkitpage.cc
 PUBLIC_HEADERS += ../lib/converter.hh ../lib/multipageloader.hh ../lib/dllbegin.inc
 PUBLIC_HEADERS += ../lib/dllend.inc ../lib/loadsettings.hh ../lib/websettings.hh
 PUBLIC_HEADERS += ../lib/utilities.hh
