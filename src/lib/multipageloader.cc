@@ -457,6 +457,14 @@ void ResourceObject::sslErrors(QNetworkReply *reply, const QList<QSslError> &) {
 	warning("SSL error ignored");
 }
 
+static QString escapeHeaderParam(QString str) {
+	str.replace('\\', "\\\\");
+	str.replace('"', "\\\"");
+	str.replace('\r', "");
+	str.replace('\n', "");
+	return str;
+}
+
 void ResourceObject::load() {
 	finished=false;
 	++multiPageLoader.loading;
@@ -468,11 +476,10 @@ void ResourceObject::load() {
 	if (hasFiles) {
 		boundary = QUuid::createUuid().toString().remove('-').remove('{').remove('}');
 		foreach (const settings::PostItem & pi, settings.post) {
-			//TODO escape values here
 			postData.append("--");
-			postData.append(boundary);
+			postData.append(boundary.toUtf8());
 			postData.append("\ncontent-disposition: form-data; name=\"");
-			postData.append(pi.name);
+			postData.append(escapeHeaderParam(pi.name).toUtf8());
 			postData.append('\"');
 			if (pi.file) {
 				QFile f(pi.value);
@@ -481,13 +488,13 @@ void ResourceObject::load() {
 					multiPageLoader.fail();
 				}
 				postData.append("; filename=\"");
-				postData.append( QFileInfo(pi.value).fileName());
+				postData.append(escapeHeaderParam(QFileInfo(pi.value).fileName()).toUtf8());
 				postData.append("\"\n\n");
 				postData.append( f.readAll() );
 				//TODO ADD MIME TYPE
 			} else {
 				postData.append("\n\n");
-				postData.append(pi.value);
+				postData.append(pi.value.toUtf8());
 			}
 			postData.append('\n');
 		}
